@@ -166,6 +166,7 @@
     <nav>
       <button id="abaOficina" class="ativo">Minha submissão</button>
       <button id="abaRanking">Ranking</button>
+      <button id="btnSair" class="oculto" title="Sair e entrar com outro participante">Sair</button>
     </nav>
   </div>
 </header>
@@ -300,6 +301,7 @@
 
 <script>
 const CHAVE = 'oficina.equipe';
+const RASCUNHO = 'oficina.rascunho';
 let equipe = null;
 let ultimaVersao = 0;
 
@@ -366,8 +368,40 @@ function abrirOficina() {
   $('telaEntrada').classList.add('oculto');
   $('telaOficina').classList.remove('oculto');
   $('rotuloEquipe').textContent = '· ' + equipe.nome;
+  $('btnSair').classList.remove('oculto');
+
+  const rascunho = localStorage.getItem(RASCUNHO);
+  if (rascunho && !$('texto').value) {
+    $('texto').value = rascunho;
+    $('contaChars').textContent = rascunho.trim().length;
+  }
   carregarHistorico();
 }
+
+/**
+ * Devolve o participante ao login sem perder o que ele escreveu.
+ * Usado quando a sessão salva no navegador aponta para uma equipe que não
+ * existe mais no servidor (banco reiniciado, reset entre turmas).
+ */
+function encerrarSessao(msg) {
+  const texto = $('texto').value.trim();
+  if (texto) localStorage.setItem(RASCUNHO, texto);
+
+  localStorage.removeItem(CHAVE);
+  equipe = null;
+  ultimaVersao = 0;
+
+  $('painel').classList.add('oculto');
+  $('telaOficina').classList.add('oculto');
+  $('telaRanking').classList.add('oculto');
+  $('telaEntrada').classList.remove('oculto');
+  $('btnSair').classList.add('oculto');
+  $('abaOficina').classList.add('ativo');
+  $('abaRanking').classList.remove('ativo');
+  erroLogin(msg || '');
+}
+
+$('btnSair').onclick = () => encerrarSessao('');
 
 $('abaOficina').onclick = () => trocarAba('oficina');
 $('abaRanking').onclick = () => { trocarAba('ranking'); carregarRanking(); };
@@ -404,9 +438,15 @@ $('btnAvaliar').onclick = async () => {
       body: JSON.stringify({ texto })
     });
     const dados = await r.json();
+    if (r.status === 404) {
+      esconderStatus();
+      encerrarSessao('Sua sessão anterior expirou. Entre novamente para continuar — seu texto foi preservado.');
+      return;
+    }
     if (!r.ok) { mostrarStatus(dados.erro || 'Falha na avaliação.', 'aviso'); return; }
 
     esconderStatus();
+    localStorage.removeItem(RASCUNHO); // avaliado com sucesso, o rascunho cumpriu seu papel
     renderizar(dados);
     carregarHistorico();
     $('btnNovaVersao').classList.remove('oculto');
@@ -505,7 +545,16 @@ function renderizarCriterios(avaliacoes) {
 }
 
 async function carregarHistorico() {
-  const r = await fetch('/api/equipes/' + equipe.id);
+  let r;
+  try {
+    r = await fetch('/api/equipes/' + equipe.id);
+  } catch { return; }
+
+  if (r.status === 404) {
+    // Sessão salva no navegador aponta para equipe que não existe mais.
+    encerrarSessao('Sua sessão anterior expirou. Entre novamente para continuar — seu texto foi preservado.');
+    return;
+  }
   if (!r.ok) return;
   const dados = await r.json();
   const hist = dados.historico;
