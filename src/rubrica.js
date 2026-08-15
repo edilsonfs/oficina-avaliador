@@ -1,11 +1,9 @@
 /**
  * Rubrica de avaliação de problema de pesquisa.
  *
- * Ancorada nas três obras de metodologia da pesquisa empírica jurídica do grupo
- * de José Mário Wanderley Gomes Neto (Editora Vozes):
- *   - Estudos de Caso: manual para a pesquisa empírica qualitativa (2024)
- *   - Análise Qualitativa Comparativa: manual para a pesquisa empírica jurídica
- *   - O que nos dizem os dados? Introdução à pesquisa jurídica quantitativa (2023)
+ * A rubrica é autossuficiente: cada critério traz a pergunta do avaliador e as
+ * âncoras que definem cada status. Nenhuma referência bibliográfica é citada —
+ * a orientação é dada em termos do próprio texto do participante.
  *
  * Os pesos somam 100. A nota NUNCA é produzida pelo modelo: o modelo classifica
  * cada critério em atendido/parcial/nao_atendido e a nota é somada aqui, em
@@ -24,7 +22,6 @@ export const CRITERIOS = [
     titulo: 'Empiricidade',
     peso: 12,
     pergunta: 'A pergunta investiga fatos observáveis do mundo, e não apenas uma tese doutrinária?',
-    fonte: 'Estudos de Caso, cap. 4, p. 48',
     ancoras: {
       atendido:
         'Investiga fatos institucionais, comportamentos, decisões ou processos observáveis. Existe algo no mundo a ser coletado e analisado.',
@@ -39,7 +36,6 @@ export const CRITERIOS = [
     titulo: 'Pergunta única',
     peso: 12,
     pergunta: 'É UMA pergunta, ou há várias perguntas embutidas em uma só frase?',
-    fonte: 'Estudos de Caso, cap. 4',
     ancoras: {
       atendido: 'Uma única pergunta central, com um único ponto de interrogação conceitual.',
       parcial: 'Uma pergunta principal com um apêndice que já é outra pergunta disfarçada.',
@@ -52,7 +48,6 @@ export const CRITERIOS = [
     titulo: 'Forma interrogativa e verbo',
     peso: 10,
     pergunta: 'Está formulada como pergunta, com verbo empírico em vez de modal projetivo?',
-    fonte: 'Estudos de Caso, cap. 4, Tabela 5, p. 47',
     ancoras: {
       atendido:
         'Formulada como pergunta, com verbo que descreve processo observável ou efeito verificável: "como se dá", "de que modo", "qual o efeito de". ATENÇÃO: verbos de processo construtivo — "como pode ser desenhado", "como pode ser prototipado", "como se estrutura" — SÃO adequados em mestrado profissional, porque o processo de construção é ele próprio o objeto empírico observado. Não confunda com projeção de efeito.',
@@ -66,7 +61,6 @@ export const CRITERIOS = [
     titulo: 'Delimitação do objeto',
     peso: 12,
     pergunta: 'Está claro e específico O QUE exatamente será investigado?',
-    fonte: 'Estudos de Caso, cap. 1 e 4',
     ancoras: {
       atendido: 'O objeto é nomeado com precisão; um terceiro leria e saberia o que examinar.',
       parcial: 'O objeto é identificável, mas amplo demais para o prazo de uma dissertação.',
@@ -78,7 +72,6 @@ export const CRITERIOS = [
     titulo: 'Recorte espacial e temporal',
     peso: 10,
     pergunta: 'Está definido ONDE e QUANDO o fenômeno será observado?',
-    fonte: 'Estudos de Caso, cap. 2; Análise Qualitativa Comparativa, cap. 2 (unidades de análise)',
     ancoras: {
       atendido: 'Instituição/jurisdição e janela temporal explícitas (ex.: TJPE, 2020-2025).',
       parcial: 'Um dos dois recortes está presente; o outro está implícito ou ausente.',
@@ -90,7 +83,6 @@ export const CRITERIOS = [
     titulo: 'Operacionalização dos conceitos',
     peso: 12,
     pergunta: 'Os conceitos-chave são definidos de forma observável/mensurável?',
-    fonte: 'O que nos dizem os dados?, cap. 3 (variáveis e inter-relações)',
     ancoras: {
       atendido: 'Cada conceito central tem indicação de como será reconhecido nos dados.',
       parcial:
@@ -104,12 +96,11 @@ export const CRITERIOS = [
     titulo: 'Adequação ao método',
     peso: 10,
     pergunta: 'A forma da pergunta condiz com um método empírico viável?',
-    fonte: 'Estudos de Caso, cap. 4, Tabela 5; AQC, cap. 1; O que nos dizem os dados?, cap. 2',
     ancoras: {
       atendido:
-        'Há correspondência clara: "como/por quê" com poucos casos → estudo de caso; combinações de condições em 5-50 casos → QCA; efeito/frequência com N grande → quantitativa.',
+        'Há correspondência clara: "como/por quê" com poucos casos pede investigação qualitativa em profundidade; combinações de condições em algumas dezenas de casos pedem análise comparativa; medida de efeito ou frequência com muitos casos pede tratamento quantitativo.',
       parcial:
-        'A correspondência existe mas é ambígua, ou o N implícito não sustenta o método sugerido.',
+        'A correspondência existe mas é ambígua, ou o número de casos implícito não sustenta o método sugerido.',
       nao_atendido:
         'A pergunta pede um método que seus próprios termos inviabilizam (ex.: promete generalização estatística a partir de um único caso).',
     },
@@ -119,7 +110,6 @@ export const CRITERIOS = [
     titulo: 'Viabilidade',
     peso: 8,
     pergunta: 'É exequível com dados acessíveis no prazo de um mestrado?',
-    fonte: 'Estudos de Caso, cap. 4',
     ancoras: {
       atendido: 'Os dados existem, são acessíveis e o escopo cabe no prazo.',
       parcial: 'Viável, mas depende de acesso institucional ou dado ainda não garantido.',
@@ -132,7 +122,6 @@ export const CRITERIOS = [
     titulo: 'Relevância e contemporaneidade',
     peso: 8,
     pergunta: 'O tema é atual e a resposta importa para alguém além do autor?',
-    fonte: 'Estudos de Caso, cap. 3 e 4',
     ancoras: {
       atendido: 'Fenômeno presente, com impacto institucional, social ou acadêmico explicitado.',
       parcial: 'Relevância presumida mas não declarada no enunciado.',
@@ -144,7 +133,6 @@ export const CRITERIOS = [
     titulo: 'Lacuna de conhecimento',
     peso: 6,
     pergunta: 'A pergunta ataca algo ainda não respondido?',
-    fonte: 'Estudos de Caso, cap. 7 (estudo de caso exploratório)',
     ancoras: {
       atendido: 'Demarca o que já se sabe e o que falta saber.',
       parcial: 'Sugere novidade sem demarcar o estado da arte.',
@@ -228,7 +216,6 @@ export function rubricaParaPrompt() {
   return CRITERIOS.map(
     (c) => `### ${c.id} — ${c.titulo} (peso ${c.peso})
 Pergunta do avaliador: ${c.pergunta}
-Referência: ${c.fonte}
 - atendido: ${c.ancoras.atendido}
 - parcial: ${c.ancoras.parcial}
 - nao_atendido: ${c.ancoras.nao_atendido}`

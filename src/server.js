@@ -41,23 +41,35 @@ app.get('/health', (_req, res) => {
 app.get('/api/rubrica', (_req, res) => {
   res.json({
     peso_total: PESO_TOTAL,
-    criterios: CRITERIOS.map(({ id, titulo, peso, pergunta, fonte, ancoras }) => ({
+    criterios: CRITERIOS.map(({ id, titulo, peso, pergunta, ancoras }) => ({
       id,
       titulo,
       peso,
       pergunta,
-      fonte,
       ancoras,
     })),
   });
 });
 
+const CODIGO_OFICINA = (process.env.CODIGO_OFICINA || 'UNICAP').trim().toUpperCase();
+const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 app.post('/api/equipes', (req, res) => {
   const nome = String(req.body?.nome ?? '').trim();
-  if (nome.length < 2) {
-    return res.status(400).json({ erro: 'Informe um nome de equipe com ao menos 2 caracteres.' });
+  const email = String(req.body?.email ?? '').trim();
+  const codigo = String(req.body?.codigo ?? '').trim().toUpperCase();
+
+  if (nome.length < 3) {
+    return res.status(400).json({ erro: 'Informe seu nome completo (ao menos 3 caracteres).' });
   }
-  res.status(201).json(criarEquipe(nome));
+  if (!RE_EMAIL.test(email)) {
+    return res.status(400).json({ erro: 'Informe um e-mail válido.' });
+  }
+  if (codigo !== CODIGO_OFICINA) {
+    return res.status(403).json({ erro: 'Código da oficina inválido.' });
+  }
+
+  res.status(201).json(criarEquipe(nome, email));
 });
 
 app.get('/api/equipes/:id', (req, res) => {

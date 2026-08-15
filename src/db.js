@@ -33,14 +33,21 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sub_equipe ON submissoes(equipe_id, versao);
 `);
 
+// Migração idempotente: a tabela já existia em produção sem a coluna de e-mail.
+const colunas = db.prepare('PRAGMA table_info(equipes)').all().map((c) => c.name);
+if (!colunas.includes('email')) {
+  db.exec("ALTER TABLE equipes ADD COLUMN email TEXT NOT NULL DEFAULT ''");
+}
+
 const agora = () => new Date().toISOString();
 
-export function criarEquipe(nome) {
+export function criarEquipe(nome, email) {
   const id = randomBytes(4).toString('hex');
   const criado_em = agora();
-  db.prepare('INSERT INTO equipes (id, nome, criado_em) VALUES (?, ?, ?)').run(
+  db.prepare('INSERT INTO equipes (id, nome, email, criado_em) VALUES (?, ?, ?, ?)').run(
     id,
     nome.trim().slice(0, 120),
+    String(email ?? '').trim().toLowerCase().slice(0, 160),
     criado_em
   );
   return { id, nome: nome.trim(), criado_em };

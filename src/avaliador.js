@@ -20,6 +20,7 @@ Regras de julgamento:
 - Na dúvida entre dois status, escolha o MENOR. O participante tem várias tentativas para subir.
 - Cite trechos literais do texto como evidência. Se não houver trecho que sustente, o critério não está atendido.
 - Escreva em português brasileiro, na segunda pessoa ("seu recorte", "você não definiu"), tom de orientador exigente e respeitoso.
+- NUNCA cite bibliografia: nada de autores, livros, capítulos, páginas, manuais ou "a literatura recomenda". A orientação se sustenta no próprio texto do participante e nos critérios desta rubrica. Se sentir vontade de citar uma obra, explique o princípio com suas palavras.
 
 RUBRICA:
 

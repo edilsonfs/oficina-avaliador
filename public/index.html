@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Avaliador de Problema de Pesquisa — Oficina PPGDI/UNICAP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f4e79'/%3E%3Cpath d='M9 21.5V10.5h4.4c2.4 0 3.9 1.2 3.9 3.2 0 1.4-.8 2.4-2 2.9l2.6 4.9h-2.5l-2.3-4.5h-1.8v4.5H9zm2.3-6.3h2c1.1 0 1.7-.5 1.7-1.4s-.6-1.4-1.7-1.4h-2v2.8z' fill='%23fff'/%3E%3Ccircle cx='21.5' cy='19.5' r='3.6' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3Cpath d='M24.2 22.2l2.6 2.6' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
   :root {
     --tinta: #16202e;
@@ -61,6 +62,7 @@
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn.secundario { background: #fff; color: var(--marca); border: 1px solid var(--marca); }
 
+  .campo { margin-bottom: .85rem; }
   .linha-acoes { display: flex; gap: .75rem; align-items: center; margin-top: .9rem; flex-wrap: wrap; }
   .contador { font-size: .8rem; color: var(--tinta-suave); margin-left: auto; }
 
@@ -103,7 +105,6 @@
   .criterio .evidencia { font-style: italic; color: var(--tinta-suave); border-left: 2px solid var(--linha); padding-left: .7rem; }
   .criterio .sugestao { background: var(--marca-clara); border-radius: 6px; padding: .6rem .75rem; }
   .criterio .sugestao b { color: var(--marca); }
-  .criterio .fonte { font-size: .75rem; color: var(--tinta-suave); margin-top: .5rem; }
 
   .grade-diff { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .9rem; }
   .bloco-diff { border-radius: 8px; padding: .85rem 1rem; font-size: .87rem; }
@@ -139,6 +140,19 @@
   @keyframes giro { to { transform: rotate(360deg); } }
   details.rubrica summary { cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--marca); }
   details.rubrica table { margin-top: .8rem; }
+
+  @media (max-width: 560px) {
+    main { padding: 0 .9rem; }
+    header { padding: 1rem .9rem; }
+    header h1 { font-size: 1.05rem; }
+    .cartao { padding: 1.05rem; }
+    /* o anel e o texto lado a lado não cabem em telas estreitas */
+    .placar { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 1rem; }
+    .resumo-contagem { justify-content: center; gap: .9rem; }
+    .contador { margin-left: 0; width: 100%; }
+    .btn { flex: 1 1 auto; }
+    details.rubrica table { display: block; overflow-x: auto; }
+  }
 </style>
 </head>
 <body>
@@ -158,13 +172,29 @@
 
 <main>
 
-  <section id="telaEntrada" class="cartao">
-    <h2>Identifique sua equipe</h2>
-    <p class="sub">O nome aparece no ranking da turma. Cada equipe pode submeter quantas versões quiser.</p>
-    <label for="nomeEquipe">Nome da equipe ou do participante</label>
-    <input type="text" id="nomeEquipe" placeholder="Ex.: Equipe 3 — Precedentes e IA" maxlength="120" autocomplete="off">
+  <section id="telaEntrada" class="cartao" style="max-width:520px;margin-left:auto;margin-right:auto">
+    <h2>Entrar na oficina</h2>
+    <p class="sub">Identifique-se para começar. Seu nome aparece no ranking da turma; o e-mail não é exibido.</p>
+
+    <div class="campo">
+      <label for="nomeEquipe">Nome completo</label>
+      <input type="text" id="nomeEquipe" placeholder="Seu nome" maxlength="120" autocomplete="name">
+    </div>
+
+    <div class="campo">
+      <label for="emailEquipe">E-mail</label>
+      <input type="text" id="emailEquipe" placeholder="voce@exemplo.com" maxlength="160" autocomplete="email" inputmode="email">
+    </div>
+
+    <div class="campo">
+      <label for="codigoOficina">Código da oficina</label>
+      <input type="text" id="codigoOficina" placeholder="Informado pelo facilitador" maxlength="40" autocomplete="off" style="text-transform:uppercase">
+    </div>
+
+    <div id="erroLogin" class="aviso oculto" style="margin-top:.9rem"></div>
+
     <div class="linha-acoes">
-      <button class="btn" id="btnEntrar">Começar</button>
+      <button class="btn" id="btnEntrar" style="width:100%;justify-content:center">Entrar</button>
     </div>
   </section>
 
@@ -230,7 +260,7 @@
 
       <div class="cartao">
         <h2>Diagnóstico por critério</h2>
-        <p class="sub">Rubrica ancorada em Gomes Neto et al. (Editora Vozes). Pesos somam 100 pontos.</p>
+        <p class="sub">Dez critérios, com pesos que somam 100 pontos.</p>
         <div id="listaCriterios"></div>
       </div>
 
@@ -246,7 +276,7 @@
       <details class="rubrica">
         <summary>Ver a rubrica completa usada na avaliação</summary>
         <table id="tabelaRubrica">
-          <thead><tr><th>Critério</th><th>Peso</th><th>O que se verifica</th><th>Referência</th></tr></thead>
+          <thead><tr><th>Critério</th><th>Peso</th><th>O que se verifica</th></tr></thead>
           <tbody></tbody>
         </table>
       </details>
@@ -278,7 +308,12 @@ const CIRC = 2 * Math.PI * 58;
 const ROTULO_STATUS = { atendido: 'atendido', parcial: 'parcial', nao_atendido: 'não atendido' };
 const RUBRICA = new Map();
 
-(function iniciar() {
+(async function iniciar() {
+  // A rubrica precisa estar carregada ANTES de restaurar o histórico: é dela que
+  // saem títulos e pesos dos critérios. Sem este await, um F5 na página mostra
+  // os ids crus ("forma_interrogativa") e "peso —".
+  await carregarRubrica();
+
   const salvo = localStorage.getItem(CHAVE);
   if (salvo) {
     try {
@@ -286,23 +321,46 @@ const RUBRICA = new Map();
       abrirOficina();
     } catch { localStorage.removeItem(CHAVE); }
   }
-  carregarRubrica();
 })();
+
+function erroLogin(msg) {
+  const el = $('erroLogin');
+  if (!msg) { el.classList.add('oculto'); return; }
+  el.textContent = msg;
+  el.classList.remove('oculto');
+}
 
 $('btnEntrar').onclick = async () => {
   const nome = $('nomeEquipe').value.trim();
-  if (nome.length < 2) { $('nomeEquipe').focus(); return; }
-  const r = await fetch('/api/equipes', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nome })
-  });
-  if (!r.ok) { alert('Não foi possível criar a equipe.'); return; }
-  equipe = await r.json();
-  localStorage.setItem(CHAVE, JSON.stringify(equipe));
-  abrirOficina();
+  const email = $('emailEquipe').value.trim();
+  const codigo = $('codigoOficina').value.trim().toUpperCase();
+
+  if (nome.length < 3) { erroLogin('Informe seu nome completo.'); $('nomeEquipe').focus(); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { erroLogin('Informe um e-mail válido.'); $('emailEquipe').focus(); return; }
+  if (!codigo) { erroLogin('Informe o código da oficina.'); $('codigoOficina').focus(); return; }
+
+  erroLogin('');
+  $('btnEntrar').disabled = true;
+  try {
+    const r = await fetch('/api/equipes', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, email, codigo })
+    });
+    const dados = await r.json();
+    if (!r.ok) { erroLogin(dados.erro || 'Não foi possível entrar.'); return; }
+    equipe = dados;
+    localStorage.setItem(CHAVE, JSON.stringify(equipe));
+    abrirOficina();
+  } catch {
+    erroLogin('Erro de conexão. Tente novamente.');
+  } finally {
+    $('btnEntrar').disabled = false;
+  }
 };
 
-$('nomeEquipe').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnEntrar').click(); });
+['nomeEquipe', 'emailEquipe', 'codigoOficina'].forEach((id) => {
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnEntrar').click(); });
+});
 
 function abrirOficina() {
   $('telaEntrada').classList.add('oculto');
@@ -442,7 +500,6 @@ function renderizarCriterios(avaliacoes) {
       (a.diagnostico ? '<p>' + escapar(a.diagnostico) + '</p>' : '') +
       (a.evidencia ? '<p class="evidencia">“' + escapar(a.evidencia) + '”</p>' : '') +
       (a.sugestao ? '<p class="sugestao"><b>Sugestão:</b> ' + escapar(a.sugestao) + '</p>' : '') +
-      (meta.fonte ? '<div class="fonte">' + escapar(meta.fonte) + '</div>' : '') +
     '</div>';
   }).join('');
 }
@@ -490,12 +547,16 @@ async function carregarRanking() {
 $('btnAtualizarRanking').onclick = carregarRanking;
 
 async function carregarRubrica() {
-  const r = await fetch('/api/rubrica');
-  const dados = await r.json();
+  let dados;
+  try {
+    const r = await fetch('/api/rubrica');
+    dados = await r.json();
+  } catch {
+    return; // falha aqui não pode impedir o login
+  }
   dados.criterios.forEach((c) => RUBRICA.set(c.id, c));
   document.querySelector('#tabelaRubrica tbody').innerHTML = dados.criterios.map((c) =>
-    '<tr><td><b>' + escapar(c.titulo) + '</b></td><td>' + c.peso + '</td><td>' + escapar(c.pergunta) +
-    '</td><td style="font-size:.8rem;color:#5b6b80">' + escapar(c.fonte) + '</td></tr>'
+    '<tr><td><b>' + escapar(c.titulo) + '</b></td><td>' + c.peso + '</td><td>' + escapar(c.pergunta) + '</td></tr>'
   ).join('');
 }
 
