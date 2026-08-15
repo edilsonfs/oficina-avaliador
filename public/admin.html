@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Administração — Oficina PPGDI/UNICAP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f2f4a'/%3E%3Cpath d='M16 7l7 3v5.5c0 4.3-2.9 8.2-7 9.5-4.1-1.3-7-5.2-7-9.5V10l7-3z' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --tinta: #16202e; --tinta-suave: #5b6b80; --linha: #dfe5ec;
+    --fundo: #f4f6f9; --papel: #fff; --marca: #0f2f4a; --marca-clara: #eaf1f8;
+    --verde: #1f7a4d; --verde-fundo: #e8f5ee; --ambar: #a9691a; --ambar-fundo: #fdf1df;
+    --vermelho: #b3261e; --vermelho-fundo: #fcebea;
+    --sombra: 0 1px 2px rgba(22,32,46,.06), 0 4px 16px rgba(22,32,46,.06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+         background: var(--fundo); color: var(--tinta); line-height: 1.55; }
+  header { background: var(--marca); color: #fff; padding: 1.1rem 1.5rem; }
+  header .wrap { max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between;
+                 align-items: center; gap: 1rem; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+  header p { margin: .15rem 0 0; font-size: .82rem; opacity: .8; }
+  header .acoes { display: flex; gap: .5rem; }
+  header button { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.25);
+                  padding: .4rem .85rem; border-radius: 6px; cursor: pointer; font-size: .84rem; font-family: inherit; }
+  header button.perigo { background: rgba(255,120,110,.18); border-color: rgba(255,150,140,.45); }
+
+  main { max-width: 1180px; margin: 1.5rem auto 4rem; padding: 0 1.5rem; }
+  .cartao { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px;
+            box-shadow: var(--sombra); padding: 1.3rem; margin-bottom: 1.15rem; }
+  .cartao h2 { margin: 0 0 .3rem; font-size: 1rem; font-weight: 600; }
+  .cartao .sub { margin: 0 0 1rem; color: var(--tinta-suave); font-size: .87rem; }
+
+  .campo { margin-bottom: .85rem; }
+  label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; }
+  input { width: 100%; padding: .7rem .85rem; border: 1px solid var(--linha); border-radius: 8px;
+          font-family: inherit; font-size: .95rem; }
+  input:focus { outline: 2px solid var(--marca); outline-offset: -1px; }
+  .btn { background: var(--marca); color: #fff; border: 0; padding: .7rem 1.4rem; border-radius: 8px;
+         font-size: .92rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.secundario { background: #fff; color: var(--marca); border: 1px solid var(--marca); }
+
+  .grade-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .85rem; }
+  .kpi { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: .95rem 1.1rem; }
+  .kpi .rotulo { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-suave); }
+  .kpi .valor { font-size: 1.85rem; font-weight: 700; letter-spacing: -.02em; margin-top: .2rem; }
+  .kpi .nota { font-size: .76rem; color: var(--tinta-suave); }
+  .kpi.destaque .valor { color: var(--verde); }
+
+  .barra { display: flex; align-items: center; gap: .5rem; }
+  .trilho { position: relative; flex: 1; height: 22px; background: #eef2f6; border-radius: 5px; overflow: hidden; min-width: 110px; }
+  .faixa-ini { position: absolute; top: 0; left: 0; height: 100%; background: #cbd7e3; }
+  .faixa-fim { position: absolute; top: 0; left: 0; height: 100%; background: var(--verde); opacity: .85; }
+  .faixa-fim.caiu { background: var(--vermelho); }
+  .trilho span { position: absolute; right: 6px; top: 1px; font-size: .74rem; font-weight: 700; color: var(--tinta); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid var(--linha); vertical-align: middle; }
+  th { font-size: .73rem; text-transform: uppercase; letter-spacing: .05em; color: var(--tinta-suave); white-space: nowrap; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.pos { font-weight: 700; width: 42px; color: var(--tinta-suave); }
+  tr.clicavel { cursor: pointer; }
+  tr.clicavel:hover { background: var(--marca-clara); }
+  .env { display: block; font-size: .76rem; color: var(--tinta-suave); }
+
+  .selo { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+          padding: .12rem .45rem; border-radius: 4px; white-space: nowrap; }
+  .selo.ok { background: var(--verde-fundo); color: var(--verde); }
+  .selo.meio { background: var(--ambar-fundo); color: var(--ambar); }
+  .selo.ruim { background: var(--vermelho-fundo); color: var(--vermelho); }
+  .selo.neutro { background: #eef2f6; color: var(--tinta-suave); }
+
+  .delta.sobe { color: var(--verde); font-weight: 700; }
+  .delta.desce { color: var(--vermelho); font-weight: 700; }
+  .delta.igual { color: var(--tinta-suave); }
+
+  .oculto { display: none !important; }
+  .aviso { background: var(--ambar-fundo); border: 1px solid #f0dcbc; color: var(--ambar);
+           padding: .8rem 1rem; border-radius: 8px; font-size: .88rem; }
+  .vazio { color: var(--tinta-suave); font-size: .88rem; padding: 1rem 0; }
+
+  dialog { border: 0; border-radius: 12px; padding: 0; max-width: 860px; width: 92%;
+           box-shadow: 0 12px 48px rgba(16,32,48,.28); }
+  dialog::backdrop { background: rgba(16,32,48,.5); }
+  .modal-topo { display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+                padding: 1.1rem 1.3rem; border-bottom: 1px solid var(--linha); }
+  .modal-topo h3 { margin: 0; font-size: 1rem; }
+  .modal-corpo { padding: 1.2rem 1.3rem 1.6rem; max-height: 70vh; overflow-y: auto; }
+  .versao { border: 1px solid var(--linha); border-radius: 9px; padding: .9rem 1rem; margin-bottom: .9rem; }
+  .versao .cab { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-bottom: .55rem; }
+  .versao .cab b { font-size: .95rem; }
+  .versao .texto { background: #f7f9fb; border-radius: 6px; padding: .7rem .85rem; font-size: .87rem; white-space: pre-wrap; }
+  .pilulas { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .6rem; }
+  .pilula { font-size: .72rem; padding: .15rem .5rem; border-radius: 4px; }
+  .pilula.atendido { background: var(--verde-fundo); color: var(--verde); }
+  .pilula.parcial { background: var(--ambar-fundo); color: var(--ambar); }
+  .pilula.nao_atendido { background: var(--vermelho-fundo); color: var(--vermelho); }
+
+  @media (max-width: 620px) {
+    main { padding: 0 .9rem; }
+    .tabela-rolagem { overflow-x: auto; }
+    .tabela-rolagem table { min-width: 660px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>Administração da Oficina</h1>
+      <p>Avaliador de Problema de Pesquisa · PPGDI/UNICAP</p>
+    </div>
+    <div class="acoes oculto" id="acoesAdmin">
+      <button id="btnAtualizar">Atualizar</button>
+      <button id="btnReset" class="perigo">Zerar dados</button>
+      <button id="btnSair">Sair</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section id="telaLogin" class="cartao" style="max-width:420px;margin-left:auto;margin-right:auto">
+    <h2>Acesso restrito</h2>
+    <p class="sub">Área do facilitador. Informe suas credenciais.</p>
+    <div class="campo">
+      <label for="usuario">Usuário</label>
+      <input type="text" id="usuario" autocomplete="username" autocapitalize="none">
+    </div>
+    <div class="campo">
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" autocomplete="current-password">
+    </div>
+    <div id="erroLogin" class="aviso oculto" style="margin-top:.9rem"></div>
+    <div style="margin-top:.9rem">
+      <button class="btn" id="btnEntrar" style="width:100%">Entrar</button>
+    </div>
+  </section>
+
+  <section id="telaPainel" class="oculto">
+
+    <div class="grade-kpi" style="margin-bottom:1.15rem">
+      <div class="kpi"><div class="rotulo">Participantes</div><div class="valor" id="kParticipantes">—</div><div class="nota" id="kParticipantesNota"></div></div>
+      <div class="kpi"><div class="rotulo">Submissões</div><div class="valor" id="kSubmissoes">—</div><div class="nota" id="kSubmissoesNota"></div></div>
+      <div class="kpi"><div class="rotulo">Nota inicial média</div><div class="valor" id="kInicial">—</div><div class="nota">primeira versão</div></div>
+      <div class="kpi destaque"><div class="rotulo">Nota final média</div><div class="valor" id="kFinal">—</div><div class="nota">última versão</div></div>
+      <div class="kpi destaque"><div class="rotulo">Evolução média</div><div class="valor" id="kEvolucao">—</div><div class="nota" id="kEvolucaoNota"></div></div>
+      <div class="kpi"><div class="rotulo">Bem delimitados</div><div class="valor" id="kBemDelimitados">—</div><div class="nota">concluíram o objetivo</div></div>
+    </div>
+
+    <div class="cartao">
+      <h2>Ranking da turma</h2>
+      <p class="sub">Ordenado pela melhor nota alcançada. Visível apenas nesta área.</p>
+      <div class="tabela-rolagem">
+        <table>
+          <thead><tr><th class="pos">#</th><th>Participante</th><th class="num">Versões</th><th class="num">Melhor nota</th></tr></thead>
+          <tbody id="corpoRanking"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cartao">
+      <h2>Evolução por participante</h2>
+      <p class="sub">Nota inicial, nota final e o ganho entre elas. Clique numa linha para ver todas as versões submetidas.</p>
+      <div class="tabela-rolagem">
+        <table>
+          <thead>
+            <tr>
+              <th>Participante</th>
+              <th class="num">Versões</th>
+              <th class="num">Inicial</th>
+              <th class="num">Final</th>
+              <th class="num">Evolução</th>
+              <th>Trajetória</th>
+              <th>Situação</th>
+            </tr>
+          </thead>
+          <tbody id="corpoParticipantes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p style="font-size:.78rem;color:var(--tinta-suave);text-align:right" id="geradoEm"></p>
+  </section>
+
+</main>
+
+<dialog id="modal">
+  <div class="modal-topo">
+    <h3 id="modalTitulo">Histórico</h3>
+    <button class="btn secundario" id="btnFechar">Fechar</button>
+  </div>
+  <div class="modal-corpo" id="modalCorpo"></div>
+</dialog>
+
+<script>
+const CHAVE = 'oficina.admin';
+let token = localStorage.getItem(CHAVE) || null;
+
+const $ = (id) => document.getElementById(id);
+const num = (v, casas) => (v === null || v === undefined ? '—' : v.toFixed(casas === undefined ? 1 : casas).replace('.', ','));
+const ROTULO = { atendido: 'atendido', parcial: 'parcial', nao_atendido: 'não atendido' };
+
+if (token) carregar(true);
+
+function erroLogin(msg) {
+  const el = $('erroLogin');
+  if (!msg) { el.classList.add('oculto'); return; }
+  el.textContent = msg;
+  el.classList.remove('oculto');
+}
+
+$('btnEntrar').onclick = async () => {
+  const usuario = $('usuario').value.trim();
+  const senha = $('senha').value;
+  if (!usuario || !senha) { erroLogin('Informe usuário e senha.'); return; }
+
+  erroLogin('');
+  $('btnEntrar').disabled = true;
+  try {
+    const r = await fetch('/api/admin/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    });
+    const dados = await r.json();
+    if (!r.ok) { erroLogin(dados.erro || 'Não foi possível entrar.'); return; }
+    token = dados.token;
+    localStorage.setItem(CHAVE, token);
+    $('senha').value = '';
+    await carregar();
+  } catch {
+    erroLogin('Erro de conexão. Tente novamente.');
+  } finally {
+    $('btnEntrar').disabled = false;
+  }
+};
+
+['usuario', 'senha'].forEach((id) => {
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnEntrar').click(); });
+});
+
+function sair(msg) {
+  token = null;
+  localStorage.removeItem(CHAVE);
+  $('telaPainel').classList.add('oculto');
+  $('acoesAdmin').classList.add('oculto');
+  $('telaLogin').classList.remove('oculto');
+  erroLogin(msg || '');
+}
+
+$('btnSair').onclick = async () => {
+  try { await fetch('/api/admin/logout', { method: 'POST', headers: { 'x-admin-session': token } }); } catch {}
+  sair('');
+};
+
+$('btnAtualizar').onclick = () => carregar();
+
+async function carregar(silencioso) {
+  let r;
+  try {
+    r = await fetch('/api/admin/dashboard', { headers: { 'x-admin-session': token } });
+  } catch {
+    if (!silencioso) erroLogin('Erro de conexão.');
+    return;
+  }
+
+  if (r.status === 401) { sair(silencioso ? '' : 'Sessão expirada. Entre novamente.'); return; }
+  if (!r.ok) { erroLogin('Falha ao carregar o painel.'); return; }
+
+  const d = await r.json();
+  $('telaLogin').classList.add('oculto');
+  $('telaPainel').classList.remove('oculto');
+  $('acoesAdmin').classList.remove('oculto');
+  renderizar(d);
+}
+
+function renderizar(d) {
+  const e = d.estatisticas;
+
+  $('kParticipantes').textContent = e.total_participantes;
+  $('kParticipantesNota').textContent = e.sem_submissao
+    ? e.sem_submissao + ' ainda sem submeter'
+    : (e.total_participantes ? 'todos submeteram' : '');
+  $('kSubmissoes').textContent = e.total_submissoes;
+  $('kSubmissoesNota').textContent = e.media_versoes ? 'média de ' + num(e.media_versoes) + ' por pessoa' : '';
+  $('kInicial').textContent = num(e.media_nota_inicial);
+  $('kFinal').textContent = num(e.media_nota_final);
+
+  const ev = e.media_evolucao;
+  $('kEvolucao').textContent = ev === null ? '—' : (ev > 0 ? '+' : '') + num(ev);
+  $('kEvolucaoNota').textContent = e.participantes_ativos
+    ? e.melhoraram + ' melhoraram · ' + e.pioraram + ' pioraram'
+    : '';
+  $('kBemDelimitados').textContent = e.bem_delimitados;
+
+  $('corpoRanking').innerHTML = d.ranking.length
+    ? d.ranking.map((x) =>
+        '<tr><td class="pos">' + x.posicao + 'º</td>' +
+        '<td>' + escapar(x.nome) + (x.bem_delimitado ? ' <span class="selo ok">bem delimitado</span>' : '') + '</td>' +
+        '<td class="num">' + x.submissoes + '</td>' +
+        '<td class="num"><b>' + num(x.melhor_nota) + '</b></td></tr>').join('')
+    : '<tr><td colspan="4" class="vazio">Nenhuma submissão ainda.</td></tr>';
+
+  $('corpoParticipantes').innerHTML = d.participantes.length
+    ? d.participantes.map((p) => linhaParticipante(p)).join('')
+    : '<tr><td colspan="7" class="vazio">Nenhum participante ainda.</td></tr>';
+
+  document.querySelectorAll('#corpoParticipantes tr[data-id]').forEach((tr) => {
+    tr.onclick = () => abrirDetalhe(tr.dataset.id);
+  });
+
+  $('geradoEm').textContent = 'Atualizado em ' + new Date(d.gerado_em).toLocaleString('pt-BR');
+}
+
+function linhaParticipante(p) {
+  if (!p.versoes) {
+    return '<tr><td>' + escapar(p.nome) + '<span class="env">' + escapar(p.email) + '</span></td>' +
+      '<td class="num">0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>' +
+      '<td>—</td><td><span class="selo neutro">sem submissão</span></td></tr>';
+  }
+
+  const classe = p.evolucao > 0 ? 'sobe' : (p.evolucao < 0 ? 'desce' : 'igual');
+  const sinal = p.evolucao > 0 ? '+' : '';
+  const caiu = p.evolucao < 0;
+  const situacao = p.bem_delimitado
+    ? '<span class="selo ok">bem delimitado</span>'
+    : (p.nota_final >= 7.5 ? '<span class="selo meio">quase lá</span>' : '<span class="selo ruim">em ajuste</span>');
+
+  return '<tr class="clicavel" data-id="' + p.equipe_id + '">' +
+    '<td>' + escapar(p.nome) + '<span class="env">' + escapar(p.email) + '</span></td>' +
+    '<td class="num">' + p.versoes + '</td>' +
+    '<td class="num">' + num(p.nota_inicial) + '</td>' +
+    '<td class="num"><b>' + num(p.nota_final) + '</b></td>' +
+    '<td class="num"><span class="delta ' + classe + '">' + sinal + num(p.evolucao) + '</span></td>' +
+    '<td><div class="barra"><div class="trilho">' +
+      '<div class="faixa-ini" style="width:' + (Math.max(p.nota_inicial, p.nota_final) * 10) + '%"></div>' +
+      '<div class="faixa-fim' + (caiu ? ' caiu' : '') + '" style="width:' + (Math.min(p.nota_inicial, p.nota_final) * 10) + '%"></div>' +
+      '<span>' + num(p.nota_inicial) + ' → ' + num(p.nota_final) + '</span>' +
+    '</div></div></td>' +
+    '<td>' + situacao + '</td></tr>';
+}
+
+async function abrirDetalhe(id) {
+  const r = await fetch('/api/admin/participantes/' + id, { headers: { 'x-admin-session': token } });
+  if (r.status === 401) { sair('Sessão expirada. Entre novamente.'); return; }
+  if (!r.ok) return;
+
+  const d = await r.json();
+  $('modalTitulo').textContent = d.equipe.nome + ' · ' + d.historico.length + ' versão(ões)';
+  $('modalCorpo').innerHTML = d.historico.map((h, i) => {
+    const anterior = i > 0 ? d.historico[i - 1].nota : null;
+    const delta = anterior === null ? '' :
+      ' <span class="delta ' + (h.nota > anterior ? 'sobe' : (h.nota < anterior ? 'desce' : 'igual')) + '">' +
+      (h.nota > anterior ? '▲ +' : (h.nota < anterior ? '▼ ' : '= ')) +
+      num(Math.round((h.nota - anterior) * 10) / 10) + '</span>';
+
+    return '<div class="versao">' +
+      '<div class="cab"><b>Versão ' + h.versao + '</b>' +
+        '<span class="selo ' + (h.resumo.classe === 'excelente' ? 'ok' : (h.resumo.classe === 'baixo' ? 'ruim' : 'meio')) + '">' +
+        num(h.nota) + ' · ' + escapar(h.resumo.rotulo) + '</span>' + delta +
+        '<span class="env" style="margin-left:auto">' + new Date(h.criado_em).toLocaleString('pt-BR') + '</span>' +
+      '</div>' +
+      '<div class="texto">' + escapar(h.texto) + '</div>' +
+      '<div class="pilulas">' + h.avaliacoes.map((a) =>
+        '<span class="pilula ' + a.status + '">' + escapar(a.criterio) + ': ' + ROTULO[a.status] + '</span>').join('') +
+      '</div>' +
+    '</div>';
+  }).join('') || '<p class="vazio">Sem submissões.</p>';
+
+  $('modal').showModal();
+}
+
+$('btnFechar').onclick = () => $('modal').close();
+
+$('btnReset').onclick = async () => {
+  if (!confirm('Apagar TODOS os participantes e submissões?\n\nQuem estiver com a página aberta será devolvido ao login. Esta ação não pode ser desfeita.')) return;
+  const r = await fetch('/api/admin/reset', { method: 'POST', headers: { 'x-admin-session': token } });
+  if (r.status === 401) { sair('Sessão expirada. Entre novamente.'); return; }
+  const d = await r.json();
+  alert('Removidos: ' + d.equipes + ' participante(s) e ' + d.submissoes + ' submissão(ões).');
+  carregar();
+};
+
+function escapar(s) {
+  return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+</script>
+
+</body>
+</html>

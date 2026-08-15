@@ -143,8 +143,12 @@ export const CRITERIOS = [
 
 export const PESO_TOTAL = CRITERIOS.reduce((s, c) => s + c.peso, 0); // 100
 
+// O rótulo da faixa descreve só a NOTA. Não use "Bem delimitado" aqui: esse é o
+// veredito estrito (nota alta E nenhum critério zerado), calculado à parte. Ter
+// os dois com o mesmo nome fazia a mesma submissão aparecer como "Bem
+// delimitado" no histórico e "Quase lá" na tabela.
 export const FAIXAS = [
-  { min: 9.0, rotulo: 'Bem delimitado', classe: 'excelente' },
+  { min: 9.0, rotulo: 'Excelente', classe: 'excelente' },
   { min: 7.5, rotulo: 'Quase lá', classe: 'bom' },
   { min: 5.0, rotulo: 'Precisa de ajustes', classe: 'medio' },
   { min: 0.0, rotulo: 'Requer reformulação', classe: 'baixo' },

@@ -1,6 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { CRITERIOS, PESO_TOTAL, calcularNota, compararVersoes } from './rubrica.js';
 import { avaliar } from './avaliador.js';
@@ -12,6 +13,8 @@ import {
   historico,
   ranking,
   limparTudo,
+  participantes,
+  estatisticas,
 } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -141,19 +144,82 @@ app.post('/api/equipes/:id/submissoes', async (req, res) => {
   }
 });
 
-app.get('/api/ranking', (_req, res) => {
-  res.json({ ranking: ranking() });
+/* ------------------------------------------------------------------ *
+ * Administração — o ranking vive aqui, fora do alcance do participante
+ * ------------------------------------------------------------------ */
+
+const ADMIN_USUARIO = process.env.ADMIN_USUARIO || 'admin';
+const ADMIN_SENHA = process.env.ADMIN_SENHA || 'unicap2026';
+const SESSAO_MS = 8 * 60 * 60 * 1000; // uma jornada de oficina
+const sessoes = new Map();
+
+/** Comparação em tempo constante, para não vazar a senha pelo tempo de resposta. */
+function iguais(a, b) {
+  const ba = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
+function autenticado(req) {
+  const token = req.get('x-admin-session');
+  if (!token) return false;
+  const s = sessoes.get(token);
+  if (!s) return false;
+  if (Date.now() > s.expira) {
+    sessoes.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function exigirAdmin(req, res, next) {
+  if (!autenticado(req)) {
+    return res.status(401).json({ erro: 'Sessão de administração inválida ou expirada.' });
+  }
+  next();
+}
+
+app.post('/api/admin/login', (req, res) => {
+  const usuario = String(req.body?.usuario ?? '');
+  const senha = String(req.body?.senha ?? '');
+
+  if (!iguais(usuario, ADMIN_USUARIO) || !iguais(senha, ADMIN_SENHA)) {
+    console.warn(`[admin] login falhou (usuario informado: "${usuario.slice(0, 40)}")`);
+    return res.status(401).json({ erro: 'Usuário ou senha inválidos.' });
+  }
+
+  const token = randomBytes(24).toString('hex');
+  sessoes.set(token, { expira: Date.now() + SESSAO_MS });
+  res.json({ token, expira_em: new Date(Date.now() + SESSAO_MS).toISOString() });
 });
 
-/**
- * Zera as submissões — para reaproveitar a instância entre turmas.
- * Exige ADMIN_TOKEN; sem a variável configurada, a rota fica desligada.
- */
+app.post('/api/admin/logout', exigirAdmin, (req, res) => {
+  sessoes.delete(req.get('x-admin-session'));
+  res.json({ ok: true });
+});
+
+app.get('/api/admin/dashboard', exigirAdmin, (_req, res) => {
+  res.json({
+    estatisticas: estatisticas(),
+    ranking: ranking(),
+    participantes: participantes(),
+    gerado_em: new Date().toISOString(),
+  });
+});
+
+/** Histórico completo de um participante: todas as versões, textos e vereditos. */
+app.get('/api/admin/participantes/:id', exigirAdmin, (req, res) => {
+  const equipe = buscarEquipe(req.params.id);
+  if (!equipe) return res.status(404).json({ erro: 'Participante não encontrado.' });
+  res.json({ equipe, historico: historico(equipe.id) });
+});
+
+/** Zera as submissões — para reaproveitar a instância entre turmas. */
 app.post('/api/admin/reset', (req, res) => {
-  const esperado = process.env.ADMIN_TOKEN;
-  if (!esperado) return res.status(404).json({ erro: 'Rota desativada.' });
-  if (req.get('x-admin-token') !== esperado) {
-    return res.status(401).json({ erro: 'Token inválido.' });
+  const porToken = process.env.ADMIN_TOKEN && req.get('x-admin-token') === process.env.ADMIN_TOKEN;
+  if (!porToken && !autenticado(req)) {
+    return res.status(401).json({ erro: 'Não autorizado.' });
   }
   const apagados = limparTudo();
   console.log(`[admin] reset executado: ${apagados.submissoes} submissões, ${apagados.equipes} equipes`);

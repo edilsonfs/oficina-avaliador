@@ -164,8 +164,6 @@
       <p>Oficina de Metodologia — Mestrado Profissional em Direito e Inovação · PPGDI/UNICAP</p>
     </div>
     <nav>
-      <button id="abaOficina" class="ativo">Minha submissão</button>
-      <button id="abaRanking">Ranking</button>
       <button id="btnSair" class="oculto" title="Sair e entrar com outro participante">Sair</button>
     </nav>
   </div>
@@ -175,7 +173,7 @@
 
   <section id="telaEntrada" class="cartao" style="max-width:520px;margin-left:auto;margin-right:auto">
     <h2>Entrar na oficina</h2>
-    <p class="sub">Identifique-se para começar. Seu nome aparece no ranking da turma; o e-mail não é exibido.</p>
+    <p class="sub">Identifique-se para começar. Seus dados são usados apenas pelo facilitador da oficina.</p>
 
     <div class="campo">
       <label for="nomeEquipe">Nome completo</label>
@@ -285,18 +283,6 @@
 
   </section>
 
-  <section id="telaRanking" class="oculto">
-    <div class="cartao">
-      <h2>Ranking da turma</h2>
-      <p class="sub">Ordenado pela melhor nota já alcançada. Quem testou uma versão e piorou não é penalizado.</p>
-      <table>
-        <thead><tr><th class="pos">#</th><th>Equipe</th><th>Versões</th><th style="text-align:right">Melhor nota</th></tr></thead>
-        <tbody id="corpoRanking"></tbody>
-      </table>
-      <div class="linha-acoes"><button class="btn secundario" id="btnAtualizarRanking">Atualizar</button></div>
-    </div>
-  </section>
-
 </main>
 
 <script>
@@ -393,27 +379,12 @@ function encerrarSessao(msg) {
 
   $('painel').classList.add('oculto');
   $('telaOficina').classList.add('oculto');
-  $('telaRanking').classList.add('oculto');
   $('telaEntrada').classList.remove('oculto');
   $('btnSair').classList.add('oculto');
-  $('abaOficina').classList.add('ativo');
-  $('abaRanking').classList.remove('ativo');
   erroLogin(msg || '');
 }
 
 $('btnSair').onclick = () => encerrarSessao('');
-
-$('abaOficina').onclick = () => trocarAba('oficina');
-$('abaRanking').onclick = () => { trocarAba('ranking'); carregarRanking(); };
-
-function trocarAba(qual) {
-  const naOficina = qual === 'oficina';
-  $('abaOficina').classList.toggle('ativo', naOficina);
-  $('abaRanking').classList.toggle('ativo', !naOficina);
-  $('telaRanking').classList.toggle('oculto', naOficina);
-  if (equipe) $('telaOficina').classList.toggle('oculto', !naOficina);
-  else $('telaEntrada').classList.toggle('oculto', !naOficina);
-}
 
 $('texto').addEventListener('input', (e) => { $('contaChars').textContent = e.target.value.trim().length; });
 
@@ -578,22 +549,6 @@ async function carregarHistorico() {
       '<b>' + h.nota.toFixed(1).replace('.', ',') + '</b>v' + h.versao +
     '</div>').join('');
 }
-
-async function carregarRanking() {
-  const r = await fetch('/api/ranking');
-  const dados = await r.json();
-  $('corpoRanking').innerHTML = dados.ranking.length
-    ? dados.ranking.map((x) =>
-        '<tr class="' + (equipe && x.equipe_id === equipe.id ? 'eu' : '') + '">' +
-          '<td class="pos">' + x.posicao + 'º</td>' +
-          '<td>' + escapar(x.nome) + (x.bem_delimitado ? ' <span class="marca-status atendido">bem delimitado</span>' : '') + '</td>' +
-          '<td>' + x.submissoes + '</td>' +
-          '<td class="nota">' + x.melhor_nota.toFixed(1).replace('.', ',') + '</td>' +
-        '</tr>').join('')
-    : '<tr><td colspan="4" style="color:#5b6b80">Nenhuma submissão ainda.</td></tr>';
-}
-
-$('btnAtualizarRanking').onclick = carregarRanking;
 
 async function carregarRubrica() {
   let dados;

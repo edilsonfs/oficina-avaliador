@@ -115,6 +115,66 @@ export function ranking() {
     .map((r, i) => ({ ...r, posicao: i + 1, bem_delimitado: !!r.bem_delimitado }));
 }
 
+/**
+ * Um registro por participante, com a trajetória completa: nota da primeira
+ * versão, nota da última e o ganho entre elas. Inclui quem entrou e ainda não
+ * submeteu nada (LEFT JOIN) — na oficina isso importa para saber quem travou.
+ */
+export function participantes() {
+  return db
+    .prepare(
+      `SELECT e.id                AS equipe_id,
+              e.nome,
+              e.email,
+              e.criado_em,
+              COUNT(s.id)         AS versoes,
+              MAX(s.nota)         AS melhor_nota,
+              MIN(s.criado_em)    AS primeira_em,
+              MAX(s.criado_em)    AS ultima_em,
+              (SELECT nota FROM submissoes WHERE equipe_id = e.id ORDER BY versao ASC  LIMIT 1) AS nota_inicial,
+              (SELECT nota FROM submissoes WHERE equipe_id = e.id ORDER BY versao DESC LIMIT 1) AS nota_final,
+              (SELECT bem_delimitado FROM submissoes WHERE equipe_id = e.id ORDER BY versao DESC LIMIT 1) AS bem_delimitado
+         FROM equipes e
+         LEFT JOIN submissoes s ON s.equipe_id = e.id
+        GROUP BY e.id
+        ORDER BY (nota_final IS NULL), nota_final DESC, versoes DESC`
+    )
+    .all()
+    .map((r, i) => ({
+      ...r,
+      posicao: i + 1,
+      bem_delimitado: !!r.bem_delimitado,
+      evolucao:
+        r.nota_inicial === null || r.nota_final === null
+          ? null
+          : Math.round((r.nota_final - r.nota_inicial) * 10) / 10,
+    }));
+}
+
+/** Agregados do dashboard. Médias só consideram quem de fato submeteu. */
+export function estatisticas() {
+  const lista = participantes().filter((p) => p.versoes > 0);
+  const media = (xs) =>
+    xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null;
+
+  const totalEquipes = db.prepare('SELECT COUNT(*) AS n FROM equipes').get().n;
+  const totalSubmissoes = db.prepare('SELECT COUNT(*) AS n FROM submissoes').get().n;
+
+  return {
+    total_participantes: totalEquipes,
+    participantes_ativos: lista.length,
+    sem_submissao: totalEquipes - lista.length,
+    total_submissoes: totalSubmissoes,
+    media_versoes: lista.length ? Math.round((totalSubmissoes / lista.length) * 10) / 10 : null,
+    media_nota_inicial: media(lista.map((p) => p.nota_inicial)),
+    media_nota_final: media(lista.map((p) => p.nota_final)),
+    media_evolucao: media(lista.map((p) => p.evolucao)),
+    bem_delimitados: lista.filter((p) => p.bem_delimitado).length,
+    melhoraram: lista.filter((p) => p.evolucao > 0).length,
+    pioraram: lista.filter((p) => p.evolucao < 0).length,
+  };
+}
+
 /** Apaga todas as submissões e equipes. Usado apenas pela rota de reset. */
 export function limparTudo() {
   const submissoes = db.prepare('SELECT COUNT(*) AS n FROM submissoes').get().n;
