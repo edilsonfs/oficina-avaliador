@@ -108,6 +108,14 @@ export function ranking() {
     .map((r, i) => ({ ...r, posicao: i + 1, bem_delimitado: !!r.bem_delimitado }));
 }
 
+/** Apaga todas as submissões e equipes. Usado apenas pela rota de reset. */
+export function limparTudo() {
+  const submissoes = db.prepare('SELECT COUNT(*) AS n FROM submissoes').get().n;
+  const equipes = db.prepare('SELECT COUNT(*) AS n FROM equipes').get().n;
+  db.exec('DELETE FROM submissoes; DELETE FROM equipes;');
+  return { submissoes, equipes };
+}
+
 function hidratar(row) {
   return {
     id: row.id,

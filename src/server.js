@@ -11,6 +11,7 @@ import {
   salvarSubmissao,
   historico,
   ranking,
+  limparTudo,
 } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -130,6 +131,21 @@ app.post('/api/equipes/:id/submissoes', async (req, res) => {
 
 app.get('/api/ranking', (_req, res) => {
   res.json({ ranking: ranking() });
+});
+
+/**
+ * Zera as submissões — para reaproveitar a instância entre turmas.
+ * Exige ADMIN_TOKEN; sem a variável configurada, a rota fica desligada.
+ */
+app.post('/api/admin/reset', (req, res) => {
+  const esperado = process.env.ADMIN_TOKEN;
+  if (!esperado) return res.status(404).json({ erro: 'Rota desativada.' });
+  if (req.get('x-admin-token') !== esperado) {
+    return res.status(401).json({ erro: 'Token inválido.' });
+  }
+  const apagados = limparTudo();
+  console.log(`[admin] reset executado: ${apagados.submissoes} submissões, ${apagados.equipes} equipes`);
+  res.json({ ok: true, ...apagados });
 });
 
 app.listen(PORTA, '0.0.0.0', () => {
