@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avaliador de Problema de Pesquisa — Oficina PPGDI/UNICAP</title>
+<style>
+  :root {
+    --tinta: #16202e;
+    --tinta-suave: #5b6b80;
+    --linha: #dfe5ec;
+    --fundo: #f4f6f9;
+    --papel: #ffffff;
+    --marca: #1f4e79;
+    --marca-clara: #eaf1f8;
+    --verde: #1f7a4d;
+    --verde-fundo: #e8f5ee;
+    --ambar: #a9691a;
+    --ambar-fundo: #fdf1df;
+    --vermelho: #b3261e;
+    --vermelho-fundo: #fcebea;
+    --raio: 10px;
+    --sombra: 0 1px 2px rgba(22,32,46,.06), 0 4px 16px rgba(22,32,46,.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--fundo);
+    color: var(--tinta);
+    line-height: 1.55;
+  }
+  header { background: var(--marca); color: #fff; padding: 1.15rem 1.5rem; }
+  header .wrap { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -.01em; }
+  header p { margin: .15rem 0 0; font-size: .85rem; opacity: .85; }
+  header nav { display: flex; gap: .5rem; }
+  header nav button {
+    background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.25);
+    padding: .4rem .85rem; border-radius: 6px; cursor: pointer; font-size: .85rem; font-family: inherit;
+  }
+  header nav button.ativo { background: #fff; color: var(--marca); font-weight: 600; }
+
+  main { max-width: 1100px; margin: 1.5rem auto 4rem; padding: 0 1.5rem; }
+  .cartao { background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); box-shadow: var(--sombra); padding: 1.35rem; margin-bottom: 1.15rem; }
+  .cartao h2 { margin: 0 0 .35rem; font-size: 1rem; font-weight: 600; }
+  .cartao .sub { margin: 0 0 1rem; color: var(--tinta-suave); font-size: .88rem; }
+
+  label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; }
+  input[type=text], textarea {
+    width: 100%; padding: .7rem .85rem; border: 1px solid var(--linha); border-radius: 8px;
+    font-family: inherit; font-size: .95rem; color: var(--tinta); background: #fff; resize: vertical;
+  }
+  input[type=text]:focus, textarea:focus { outline: 2px solid var(--marca); outline-offset: -1px; border-color: var(--marca); }
+  textarea { min-height: 170px; line-height: 1.6; }
+
+  .btn {
+    background: var(--marca); color: #fff; border: 0; padding: .7rem 1.4rem; border-radius: 8px;
+    font-size: .92rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.secundario { background: #fff; color: var(--marca); border: 1px solid var(--marca); }
+
+  .linha-acoes { display: flex; gap: .75rem; align-items: center; margin-top: .9rem; flex-wrap: wrap; }
+  .contador { font-size: .8rem; color: var(--tinta-suave); margin-left: auto; }
+
+  .placar { display: grid; grid-template-columns: auto 1fr; gap: 1.5rem; align-items: center; }
+  .anel { position: relative; width: 132px; height: 132px; flex-shrink: 0; }
+  .anel svg { transform: rotate(-90deg); }
+  .anel .valor { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .anel .valor strong { display: block; font-size: 2.1rem; line-height: 1; letter-spacing: -.02em; }
+  .anel .valor span { font-size: .72rem; color: var(--tinta-suave); text-transform: uppercase; letter-spacing: .06em; }
+
+  .faixa { display: inline-block; padding: .28rem .75rem; border-radius: 999px; font-size: .82rem; font-weight: 600; }
+  .faixa.excelente { background: var(--verde-fundo); color: var(--verde); }
+  .faixa.bom { background: var(--marca-clara); color: var(--marca); }
+  .faixa.medio { background: var(--ambar-fundo); color: var(--ambar); }
+  .faixa.baixo { background: var(--vermelho-fundo); color: var(--vermelho); }
+
+  .delta { font-size: .88rem; font-weight: 600; margin-left: .6rem; }
+  .delta.sobe { color: var(--verde); }
+  .delta.desce { color: var(--vermelho); }
+  .delta.igual { color: var(--tinta-suave); }
+
+  .selo-ok { margin-top: .8rem; background: var(--verde-fundo); border: 1px solid #bfe3d0; color: var(--verde);
+    padding: .8rem 1rem; border-radius: 8px; font-size: .9rem; font-weight: 600; }
+
+  .resumo-contagem { display: flex; gap: 1.25rem; margin-top: .7rem; font-size: .85rem; color: var(--tinta-suave); flex-wrap: wrap; }
+  .resumo-contagem b { color: var(--tinta); }
+
+  .criterio { border: 1px solid var(--linha); border-left-width: 4px; border-radius: 8px; padding: .85rem 1rem; margin-bottom: .6rem; background: #fff; }
+  .criterio.atendido { border-left-color: var(--verde); }
+  .criterio.parcial { border-left-color: var(--ambar); }
+  .criterio.nao_atendido { border-left-color: var(--vermelho); }
+  .criterio .topo { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .criterio .topo strong { font-size: .93rem; }
+  .criterio .peso { font-size: .75rem; color: var(--tinta-suave); }
+  .marca-status { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .15rem .5rem; border-radius: 4px; }
+  .marca-status.atendido { background: var(--verde-fundo); color: var(--verde); }
+  .marca-status.parcial { background: var(--ambar-fundo); color: var(--ambar); }
+  .marca-status.nao_atendido { background: var(--vermelho-fundo); color: var(--vermelho); }
+  .criterio p { margin: .5rem 0 0; font-size: .88rem; }
+  .criterio .evidencia { font-style: italic; color: var(--tinta-suave); border-left: 2px solid var(--linha); padding-left: .7rem; }
+  .criterio .sugestao { background: var(--marca-clara); border-radius: 6px; padding: .6rem .75rem; }
+  .criterio .sugestao b { color: var(--marca); }
+  .criterio .fonte { font-size: .75rem; color: var(--tinta-suave); margin-top: .5rem; }
+
+  .grade-diff { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .9rem; }
+  .bloco-diff { border-radius: 8px; padding: .85rem 1rem; font-size: .87rem; }
+  .bloco-diff h3 { margin: 0 0 .5rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; }
+  .bloco-diff ul { margin: 0; padding-left: 1.1rem; }
+  .bloco-diff li { margin-bottom: .25rem; }
+  .bloco-diff.ganho { background: var(--verde-fundo); color: var(--verde); }
+  .bloco-diff.perda { background: var(--vermelho-fundo); color: var(--vermelho); }
+  .bloco-diff.pendente { background: var(--ambar-fundo); color: var(--ambar); }
+  .bloco-diff.vazio { background: #f7f9fb; color: var(--tinta-suave); }
+
+  .alerta-novo { background: var(--vermelho-fundo); border: 1px solid #f0cdca; color: var(--vermelho);
+    border-radius: 8px; padding: .85rem 1rem; font-size: .88rem; }
+  .alerta-novo h3 { margin: 0 0 .4rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
+  .alerta-novo ul { margin: 0; padding-left: 1.1rem; }
+
+  .tempo { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .tempo .v { background: #fff; border: 1px solid var(--linha); border-radius: 8px; padding: .5rem .8rem; font-size: .82rem; text-align: center; min-width: 74px; }
+  .tempo .v b { display: block; font-size: 1.15rem; }
+  .tempo .v.atual { border-color: var(--marca); box-shadow: 0 0 0 2px var(--marca-clara); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: left; padding: .65rem .5rem; border-bottom: 1px solid var(--linha); }
+  th { font-size: .76rem; text-transform: uppercase; letter-spacing: .05em; color: var(--tinta-suave); }
+  td.pos { font-weight: 700; width: 46px; }
+  td.nota { font-weight: 700; text-align: right; }
+  tr.eu { background: var(--marca-clara); }
+
+  .oculto { display: none !important; }
+  .aviso { background: var(--ambar-fundo); border: 1px solid #f0dcbc; color: var(--ambar); padding: .8rem 1rem; border-radius: 8px; font-size: .88rem; }
+  .carregando { display: flex; align-items: center; gap: .6rem; color: var(--tinta-suave); font-size: .9rem; }
+  .girando { width: 16px; height: 16px; border: 2px solid var(--linha); border-top-color: var(--marca); border-radius: 50%; animation: giro .8s linear infinite; }
+  @keyframes giro { to { transform: rotate(360deg); } }
+  details.rubrica summary { cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--marca); }
+  details.rubrica table { margin-top: .8rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>Avaliador de Problema de Pesquisa</h1>
+      <p>Oficina de Metodologia — Mestrado Profissional em Direito e Inovação · PPGDI/UNICAP</p>
+    </div>
+    <nav>
+      <button id="abaOficina" class="ativo">Minha submissão</button>
+      <button id="abaRanking">Ranking</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section id="telaEntrada" class="cartao">
+    <h2>Identifique sua equipe</h2>
+    <p class="sub">O nome aparece no ranking da turma. Cada equipe pode submeter quantas versões quiser.</p>
+    <label for="nomeEquipe">Nome da equipe ou do participante</label>
+    <input type="text" id="nomeEquipe" placeholder="Ex.: Equipe 3 — Precedentes e IA" maxlength="120" autocomplete="off">
+    <div class="linha-acoes">
+      <button class="btn" id="btnEntrar">Começar</button>
+    </div>
+  </section>
+
+  <section id="telaOficina" class="oculto">
+
+    <div class="cartao">
+      <h2>Seu problema de pesquisa <span id="rotuloEquipe" class="peso"></span></h2>
+      <p class="sub">
+        Escreva o enunciado completo — a pergunta de pesquisa e, se quiser, uma ou duas frases de delimitação.
+        Você receberá um diagnóstico critério a critério e poderá reenviar quantas vezes precisar.
+      </p>
+      <textarea id="texto" placeholder="Ex.: Como se dá a aplicação da ratio decidendi de precedentes qualificados pelas câmaras cíveis do TJPE, entre 2020 e 2025, nas decisões que invocam o CPC/2015?"></textarea>
+      <div class="linha-acoes">
+        <button class="btn" id="btnAvaliar">Avaliar</button>
+        <button class="btn secundario oculto" id="btnNovaVersao">Escrever nova versão</button>
+        <span class="contador"><span id="contaChars">0</span> caracteres</span>
+      </div>
+      <div id="statusEnvio" class="oculto" style="margin-top:.9rem"></div>
+    </div>
+
+    <div id="painel" class="oculto">
+
+      <div class="cartao">
+        <div class="placar">
+          <div class="anel">
+            <svg width="132" height="132" viewBox="0 0 132 132">
+              <circle cx="66" cy="66" r="58" fill="none" stroke="#e8edf3" stroke-width="11"></circle>
+              <circle id="arco" cx="66" cy="66" r="58" fill="none" stroke="#1f4e79" stroke-width="11"
+                      stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"
+                      style="transition: stroke-dashoffset .7s ease, stroke .3s"></circle>
+            </svg>
+            <div class="valor"><strong id="notaValor">—</strong><span>de 10</span></div>
+          </div>
+          <div>
+            <div>
+              <span id="faixaRotulo" class="faixa">—</span>
+              <span id="deltaNota" class="delta"></span>
+            </div>
+            <div class="resumo-contagem">
+              <span><b id="cAtendidos">0</b> atendidos</span>
+              <span><b id="cParciais">0</b> parciais</span>
+              <span><b id="cNao">0</b> não atendidos</span>
+              <span>versão <b id="cVersao">1</b></span>
+            </div>
+            <p id="comentarioGeral" style="margin:.8rem 0 0; font-size:.9rem"></p>
+            <div id="seloOk" class="selo-ok oculto"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cartaoErrosNovos" class="cartao oculto">
+        <div class="alerta-novo">
+          <h3>Atenção — problemas introduzidos nesta reescrita</h3>
+          <ul id="listaErrosNovos"></ul>
+        </div>
+      </div>
+
+      <div id="cartaoDiff" class="cartao oculto">
+        <h2>O que mudou desde a versão anterior</h2>
+        <p class="sub">Comparação automática dos vereditos, critério a critério.</p>
+        <div class="grade-diff" id="grelhaDiff"></div>
+      </div>
+
+      <div class="cartao">
+        <h2>Diagnóstico por critério</h2>
+        <p class="sub">Rubrica ancorada em Gomes Neto et al. (Editora Vozes). Pesos somam 100 pontos.</p>
+        <div id="listaCriterios"></div>
+      </div>
+
+      <div class="cartao">
+        <h2>Suas versões</h2>
+        <p class="sub">A nota sobe ou desce conforme os critérios mudam de status.</p>
+        <div class="tempo" id="linhaTempo"></div>
+      </div>
+
+    </div>
+
+    <div class="cartao">
+      <details class="rubrica">
+        <summary>Ver a rubrica completa usada na avaliação</summary>
+        <table id="tabelaRubrica">
+          <thead><tr><th>Critério</th><th>Peso</th><th>O que se verifica</th><th>Referência</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
+    </div>
+
+  </section>
+
+  <section id="telaRanking" class="oculto">
+    <div class="cartao">
+      <h2>Ranking da turma</h2>
+      <p class="sub">Ordenado pela melhor nota já alcançada. Quem testou uma versão e piorou não é penalizado.</p>
+      <table>
+        <thead><tr><th class="pos">#</th><th>Equipe</th><th>Versões</th><th style="text-align:right">Melhor nota</th></tr></thead>
+        <tbody id="corpoRanking"></tbody>
+      </table>
+      <div class="linha-acoes"><button class="btn secundario" id="btnAtualizarRanking">Atualizar</button></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const CHAVE = 'oficina.equipe';
+let equipe = null;
+let ultimaVersao = 0;
+
+const $ = (id) => document.getElementById(id);
+const CIRC = 2 * Math.PI * 58;
+const ROTULO_STATUS = { atendido: 'atendido', parcial: 'parcial', nao_atendido: 'não atendido' };
+const RUBRICA = new Map();
+
+(function iniciar() {
+  const salvo = localStorage.getItem(CHAVE);
+  if (salvo) {
+    try {
+      equipe = JSON.parse(salvo);
+      abrirOficina();
+    } catch { localStorage.removeItem(CHAVE); }
+  }
+  carregarRubrica();
+})();
+
+$('btnEntrar').onclick = async () => {
+  const nome = $('nomeEquipe').value.trim();
+  if (nome.length < 2) { $('nomeEquipe').focus(); return; }
+  const r = await fetch('/api/equipes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nome })
+  });
+  if (!r.ok) { alert('Não foi possível criar a equipe.'); return; }
+  equipe = await r.json();
+  localStorage.setItem(CHAVE, JSON.stringify(equipe));
+  abrirOficina();
+};
+
+$('nomeEquipe').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnEntrar').click(); });
+
+function abrirOficina() {
+  $('telaEntrada').classList.add('oculto');
+  $('telaOficina').classList.remove('oculto');
+  $('rotuloEquipe').textContent = '· ' + equipe.nome;
+  carregarHistorico();
+}
+
+$('abaOficina').onclick = () => trocarAba('oficina');
+$('abaRanking').onclick = () => { trocarAba('ranking'); carregarRanking(); };
+
+function trocarAba(qual) {
+  const naOficina = qual === 'oficina';
+  $('abaOficina').classList.toggle('ativo', naOficina);
+  $('abaRanking').classList.toggle('ativo', !naOficina);
+  $('telaRanking').classList.toggle('oculto', naOficina);
+  if (equipe) $('telaOficina').classList.toggle('oculto', !naOficina);
+  else $('telaEntrada').classList.toggle('oculto', !naOficina);
+}
+
+$('texto').addEventListener('input', (e) => { $('contaChars').textContent = e.target.value.trim().length; });
+
+$('btnNovaVersao').onclick = () => {
+  $('texto').focus();
+  $('texto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+$('btnAvaliar').onclick = async () => {
+  const texto = $('texto').value.trim();
+  if (texto.length < 40) {
+    mostrarStatus('Escreva o enunciado completo — ao menos 40 caracteres.', 'aviso');
+    return;
+  }
+
+  $('btnAvaliar').disabled = true;
+  mostrarStatus('<span class="carregando"><span class="girando"></span> Avaliando pelos 10 critérios da rubrica…</span>', 'carregando');
+
+  try {
+    const r = await fetch('/api/equipes/' + equipe.id + '/submissoes', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto })
+    });
+    const dados = await r.json();
+    if (!r.ok) { mostrarStatus(dados.erro || 'Falha na avaliação.', 'aviso'); return; }
+
+    esconderStatus();
+    renderizar(dados);
+    carregarHistorico();
+    $('btnNovaVersao').classList.remove('oculto');
+    $('painel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    mostrarStatus('Erro de conexão. Tente novamente.', 'aviso');
+  } finally {
+    $('btnAvaliar').disabled = false;
+  }
+};
+
+function mostrarStatus(html, classe) {
+  const el = $('statusEnvio');
+  el.className = classe === 'aviso' ? 'aviso' : '';
+  el.innerHTML = html;
+  el.classList.remove('oculto');
+}
+function esconderStatus() { $('statusEnvio').classList.add('oculto'); }
+
+function renderizar(d) {
+  $('painel').classList.remove('oculto');
+  ultimaVersao = d.versao;
+
+  const frac = Math.max(0, Math.min(1, d.resumo.nota / 10));
+  const cor = { excelente: '#1f7a4d', bom: '#1f4e79', medio: '#a9691a', baixo: '#b3261e' }[d.resumo.classe];
+  $('arco').style.strokeDashoffset = String(CIRC * (1 - frac));
+  $('arco').style.stroke = cor;
+  $('notaValor').textContent = d.resumo.nota.toFixed(1).replace('.', ',');
+  $('faixaRotulo').textContent = d.resumo.rotulo;
+  $('faixaRotulo').className = 'faixa ' + d.resumo.classe;
+
+  const dl = $('deltaNota');
+  if (d.delta_nota === null || d.delta_nota === undefined) { dl.textContent = ''; dl.className = 'delta'; }
+  else if (d.delta_nota > 0) { dl.textContent = '▲ +' + d.delta_nota.toFixed(1).replace('.', ',') + ' desde a v' + (d.versao - 1); dl.className = 'delta sobe'; }
+  else if (d.delta_nota < 0) { dl.textContent = '▼ ' + d.delta_nota.toFixed(1).replace('.', ',') + ' desde a v' + (d.versao - 1); dl.className = 'delta desce'; }
+  else { dl.textContent = '= sem mudança de nota desde a v' + (d.versao - 1); dl.className = 'delta igual'; }
+
+  $('cAtendidos').textContent = d.resumo.total_atendidos;
+  $('cParciais').textContent = d.resumo.total_parciais;
+  $('cNao').textContent = d.resumo.total_nao_atendidos;
+  $('cVersao').textContent = d.versao;
+  $('comentarioGeral').textContent = d.comentario_geral || '';
+
+  const selo = $('seloOk');
+  if (d.resumo.bem_delimitado) {
+    selo.textContent = '✓ Seu problema de pesquisa está bem delimitado. Ele atende aos critérios da rubrica e está pronto para ser levado ao orientador.';
+    selo.classList.remove('oculto');
+  } else { selo.classList.add('oculto'); }
+
+  const cEN = $('cartaoErrosNovos');
+  if (d.erros_novos && d.erros_novos.length) {
+    $('listaErrosNovos').innerHTML = d.erros_novos.map((e) => '<li>' + escapar(e) + '</li>').join('');
+    cEN.classList.remove('oculto');
+  } else { cEN.classList.add('oculto'); }
+
+  renderizarDiff(d.diff);
+  renderizarCriterios(d.avaliacoes);
+}
+
+function renderizarDiff(diff) {
+  const cartao = $('cartaoDiff');
+  if (!diff) { cartao.classList.add('oculto'); return; }
+  cartao.classList.remove('oculto');
+
+  const bloco = (classe, titulo, itens, vazio) => itens.length
+    ? '<div class="bloco-diff ' + classe + '"><h3>' + titulo + '</h3><ul>' + itens.join('') + '</ul></div>'
+    : '<div class="bloco-diff vazio"><h3>' + titulo + '</h3><p style="margin:0">' + vazio + '</p></div>';
+
+  $('grelhaDiff').innerHTML = [
+    bloco('ganho', 'Corrigidos', diff.conquistas.map((c) =>
+      '<li><b>' + escapar(c.titulo) + '</b> — de ' + ROTULO_STATUS[c.de] + ' para ' + ROTULO_STATUS[c.para] + '</li>'),
+      'Nenhum critério melhorou nesta versão.'),
+    bloco('perda', 'Regressões', diff.regressoes.map((c) =>
+      '<li><b>' + escapar(c.titulo) + '</b> — caiu de ' + ROTULO_STATUS[c.de] + ' para ' + ROTULO_STATUS[c.para] + '</li>'),
+      'Nenhuma regressão. Nada que estava certo foi perdido.'),
+    bloco('pendente', 'Ainda pendentes', diff.pendentes.map((c) =>
+      '<li><b>' + escapar(c.titulo) + '</b> — ' + ROTULO_STATUS[c.status] + '</li>'),
+      'Nada pendente.'),
+  ].join('');
+}
+
+function renderizarCriterios(avaliacoes) {
+  $('listaCriterios').innerHTML = avaliacoes.map((a) => {
+    const meta = RUBRICA.get(a.criterio) || {};
+    return '<div class="criterio ' + a.status + '">' +
+      '<div class="topo">' +
+        '<strong>' + escapar(meta.titulo || a.criterio) + '</strong>' +
+        '<span class="marca-status ' + a.status + '">' + ROTULO_STATUS[a.status] + '</span>' +
+        '<span class="peso">peso ' + (meta.peso !== undefined ? meta.peso : '—') + '</span>' +
+      '</div>' +
+      (a.diagnostico ? '<p>' + escapar(a.diagnostico) + '</p>' : '') +
+      (a.evidencia ? '<p class="evidencia">“' + escapar(a.evidencia) + '”</p>' : '') +
+      (a.sugestao ? '<p class="sugestao"><b>Sugestão:</b> ' + escapar(a.sugestao) + '</p>' : '') +
+      (meta.fonte ? '<div class="fonte">' + escapar(meta.fonte) + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+async function carregarHistorico() {
+  const r = await fetch('/api/equipes/' + equipe.id);
+  if (!r.ok) return;
+  const dados = await r.json();
+  const hist = dados.historico;
+  if (!hist.length) return;
+
+  const precisaRestaurar = !ultimaVersao;
+  if (precisaRestaurar) {
+    const ult = hist[hist.length - 1];
+    ultimaVersao = ult.versao;
+    $('texto').value = ult.texto;
+    $('contaChars').textContent = ult.texto.trim().length;
+    renderizar({
+      versao: ult.versao, resumo: ult.resumo, avaliacoes: ult.avaliacoes, diff: ult.diff,
+      delta_nota: null, erros_novos: [], comentario_geral: '',
+    });
+    $('btnNovaVersao').classList.remove('oculto');
+  }
+
+  $('linhaTempo').innerHTML = hist.map((h) =>
+    '<div class="v ' + (h.versao === ultimaVersao ? 'atual' : '') + '">' +
+      '<b>' + h.nota.toFixed(1).replace('.', ',') + '</b>v' + h.versao +
+    '</div>').join('');
+}
+
+async function carregarRanking() {
+  const r = await fetch('/api/ranking');
+  const dados = await r.json();
+  $('corpoRanking').innerHTML = dados.ranking.length
+    ? dados.ranking.map((x) =>
+        '<tr class="' + (equipe && x.equipe_id === equipe.id ? 'eu' : '') + '">' +
+          '<td class="pos">' + x.posicao + 'º</td>' +
+          '<td>' + escapar(x.nome) + (x.bem_delimitado ? ' <span class="marca-status atendido">bem delimitado</span>' : '') + '</td>' +
+          '<td>' + x.submissoes + '</td>' +
+          '<td class="nota">' + x.melhor_nota.toFixed(1).replace('.', ',') + '</td>' +
+        '</tr>').join('')
+    : '<tr><td colspan="4" style="color:#5b6b80">Nenhuma submissão ainda.</td></tr>';
+}
+
+$('btnAtualizarRanking').onclick = carregarRanking;
+
+async function carregarRubrica() {
+  const r = await fetch('/api/rubrica');
+  const dados = await r.json();
+  dados.criterios.forEach((c) => RUBRICA.set(c.id, c));
+  document.querySelector('#tabelaRubrica tbody').innerHTML = dados.criterios.map((c) =>
+    '<tr><td><b>' + escapar(c.titulo) + '</b></td><td>' + c.peso + '</td><td>' + escapar(c.pergunta) +
+    '</td><td style="font-size:.8rem;color:#5b6b80">' + escapar(c.fonte) + '</td></tr>'
+  ).join('');
+}
+
+function escapar(s) {
+  return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+</script>
+
+</body>
+</html>
