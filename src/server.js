@@ -25,6 +25,45 @@ const MIN_CARACTERES = 40;
 const MAX_CARACTERES = 6000;
 const INTERVALO_MIN_MS = 5000; // trava anti-duplo-clique por equipe
 
+// Não anunciar o Express nas respostas (ZAP: X-Powered-By information leak, CWE-497).
+app.disable('x-powered-by');
+
+/*
+ * Cabeçalhos de segurança — cobrem os alertas do OWASP ZAP:
+ *   - Content-Security-Policy ausente (CWE-693)
+ *   - Anti-clickjacking ausente (CWE-1021)
+ *   - Strict-Transport-Security ausente (CWE-319)
+ *   - X-Content-Type-Options ausente (CWE-693)
+ * O front-end usa <style> e <script> inline (public/index.html e admin.html),
+ * por isso script-src/style-src precisam de 'unsafe-inline'. Todo o resto fica
+ * restrito a 'self', sem origens externas. O favicon é um data: URI (img-src data:).
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "font-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join('; ');
+
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', CSP);
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  // Respostas de API não devem ser cacheadas (ZAP: Re-examine Cache-control, CWE-525).
+  if (req.path.startsWith('/api/') || req.path === '/health') {
+    res.setHeader('Cache-Control', 'no-store');
+  }
+  next();
+});
+
 app.use(express.json({ limit: '256kb' }));
 app.use(express.static(join(__dirname, '..', 'public')));
 
