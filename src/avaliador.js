@@ -1,4 +1,4 @@
-import { CRITERIOS, rubricaParaPrompt } from './rubrica.js';
+import { CRITERIOS, MEDIDAS, NIVEIS, avaliarConcisao, rubricaParaPrompt } from './rubrica.js';
 
 const API_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
 // flash julga tão bem quanto o pro nesta rubrica, na metade do tempo (48s vs 93s)
@@ -21,6 +21,29 @@ Regras de julgamento:
 - Cite trechos literais do texto como evidência. Se não houver trecho que sustente, o critério não está atendido.
 - Escreva em português brasileiro, na segunda pessoa ("seu recorte", "você não definiu"), tom de orientador exigente e respeitoso.
 - NUNCA cite bibliografia: nada de autores, livros, capítulos, páginas, manuais ou "a literatura recomenda". A orientação se sustenta no próprio texto do participante e nos critérios desta rubrica. Se sentir vontade de citar uma obra, explique o princípio com suas palavras.
+
+CALIBRAGEM DE ESCALA (referência interna — NUNCA mencione, cite ou atribua estes exemplos ao participante; use-os apenas para calibrar seu próprio rigor):
+
+Um problema de pesquisa aprovado em mestrado tem o tamanho e a forma destes:
+1. "Em que medida as práticas das Instituições Federais de Educação Superior (IFES) na oferta de vagas para refugiados efetivam direitos linguísticos desses indivíduos no acesso ao direito social à educação?" (30 palavras)
+2. "Dentre os indivíduos condenados pela prática do crime de furto, pode-se verificar a maior taxa de reincidência entre aqueles que cumpriram qual espécie de pena?" (25 palavras, com as balizas de espaço e tempo — "em Salvador, no ano de 1999" — declaradas FORA da pergunta)
+3. "O sistema prisional na cidade de Salvador vem permitindo o cumprimento da função ressocializadora da pena?" (16 palavras)
+4. "Qual era a posição predominante na doutrina brasileira acerca do enquadramento da culpabilidade, no campo da Teoria Geral do Delito, durante os anos que precederam a outorga do Código Penal de 1940?" (32 palavras)
+
+O que se aprende com eles: a pergunta central é curta — de 16 a 32 palavras — e carrega UM verbo, UM objeto e UM critério de observação. O recorte, os conceitos e a justificativa moram em frases separadas, não dentro da pergunta. Um enunciado de mestrado tem UM problema e UMA hipótese; desdobramentos viram quesitos à parte.
+
+Contraexemplos, para você não confundir brevidade com qualidade:
+- "O que pensam os magistrados?" — curta, mas sem objeto observável e sem viabilidade: concisão não salva pergunta sem empiricidade.
+- "A ressocialização é uma função legítima das penas nas sociedades democráticas?" — bem escrita, porém teórica: não há dado a coletar.
+- "Animais podem ser considerados sujeitos de direitos? Em caso afirmativo, quais deles?" — duas perguntas e objeto amplíssimo.
+
+Como usar a calibragem: quando o enunciado do participante for muito mais longo que esses exemplares, o problema quase nunca é estilo — é escopo. Aponte QUAL oração deve sair da pergunta e para onde ela deve ir, em vez de pedir "mais clareza". Nunca sugira acrescentar texto a um enunciado que já está longo: sugira cortar e realocar.
+
+A EXTENSÃO NÃO É JULGADA POR VOCÊ. O tamanho do enunciado é medido em código, fora da sua resposta, e não está na rubrica abaixo: a faixa-alvo é de até ${MEDIDAS.pergunta_alvo} palavras na pergunta central e até ${MEDIDAS.enunciado_alvo} no enunciado inteiro. Conheça esses números para que suas sugestões apontem na mesma direção, mas não emita veredito sobre concisão nem invente o critério "concisao" no seu JSON.
+
+ESCADA DE NÍVEL (também derivada em código a partir dos seus vereditos — não a calcule nem a mencione como número):
+${NIVEIS.map((n) => `N${n.nivel} ${n.rotulo}: ${n.descricao}`).join('\n')}
+O "comentario_geral" deve apontar a prioridade que faz o participante subir um degrau — o critério mais pesado que ainda está frágil —, não uma lista de tudo o que falta.
 
 RUBRICA:
 
@@ -178,5 +201,17 @@ export async function avaliar({ texto, versao, anterior }) {
 
   const { bruto, uso } = await chamarDeepSeek(mensagens);
   const validado = validar(bruto);
-  return { ...validado, uso, modelo: MODELO };
+
+  // A concisão entra aqui, depois do modelo: ela é contada, não julgada. Por
+  // isso é o único critério que dá exatamente o mesmo veredito em duas
+  // submissões de texto idêntico, sem depender de temperatura nem de humor.
+  const concisao = avaliarConcisao(texto);
+
+  return {
+    ...validado,
+    avaliacoes: [...validado.avaliacoes, concisao],
+    medida: concisao.medida,
+    uso,
+    modelo: MODELO,
+  };
 }

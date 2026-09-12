@@ -150,6 +150,8 @@
       <div class="kpi destaque"><div class="rotulo">Nota final média</div><div class="valor" id="kFinal">—</div><div class="nota">última versão</div></div>
       <div class="kpi destaque"><div class="rotulo">Evolução média</div><div class="valor" id="kEvolucao">—</div><div class="nota" id="kEvolucaoNota"></div></div>
       <div class="kpi"><div class="rotulo">Bem delimitados</div><div class="valor" id="kBemDelimitados">—</div><div class="nota">concluíram o objetivo</div></div>
+      <div class="kpi destaque"><div class="rotulo">No nível 4</div><div class="valor" id="kNivel4">—</div><div class="nota" id="kNivelNota">problema pesquisável</div></div>
+      <div class="kpi"><div class="rotulo">Palavras no enunciado</div><div class="valor" id="kPalavras">—</div><div class="nota" id="kPalavrasNota">média da última versão</div></div>
     </div>
 
     <div class="cartao">
@@ -175,6 +177,8 @@
               <th class="num">Inicial</th>
               <th class="num">Final</th>
               <th class="num">Evolução</th>
+              <th class="num">Nível</th>
+              <th class="num">Palavras</th>
               <th>Trajetória</th>
               <th>Situação</th>
             </tr>
@@ -297,6 +301,19 @@ function renderizar(d) {
     : '';
   $('kBemDelimitados').textContent = e.bem_delimitados;
 
+  // Nível e extensão só existem para quem submeteu depois da escada entrar no ar.
+  const d4 = e.distribuicao_niveis;
+  $('kNivel4').textContent = e.medidos ? e.no_nivel_4 : '—';
+  $('kNivelNota').textContent = e.medidos && d4
+    ? 'N1 ' + d4['1'] + ' · N2 ' + d4['2'] + ' · N3 ' + d4['3'] + ' · N4 ' + d4['4']
+    : 'ainda sem submissões medidas';
+  $('kPalavras').textContent = e.media_palavras_final === null || e.media_palavras_final === undefined
+    ? '—'
+    : Math.round(e.media_palavras_final);
+  $('kPalavrasNota').textContent = e.media_palavras_inicial
+    ? 'começaram com ' + Math.round(e.media_palavras_inicial)
+    : 'média da última versão';
+
   $('corpoRanking').innerHTML = d.ranking.length
     ? d.ranking.map((x) =>
         '<tr><td class="pos">' + x.posicao + 'º</td>' +
@@ -307,7 +324,7 @@ function renderizar(d) {
 
   $('corpoParticipantes').innerHTML = d.participantes.length
     ? d.participantes.map((p) => linhaParticipante(p)).join('')
-    : '<tr><td colspan="7" class="vazio">Nenhum participante ainda.</td></tr>';
+    : '<tr><td colspan="9" class="vazio">Nenhum participante ainda.</td></tr>';
 
   document.querySelectorAll('#corpoParticipantes tr[data-id]').forEach((tr) => {
     tr.onclick = () => abrirDetalhe(tr.dataset.id);
@@ -320,6 +337,7 @@ function linhaParticipante(p) {
   if (!p.versoes) {
     return '<tr><td>' + escapar(p.nome) + '<span class="env">' + escapar(p.email) + '</span></td>' +
       '<td class="num">0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>' +
+      '<td class="num">—</td><td class="num">—</td>' +
       '<td>—</td><td><span class="selo neutro">sem submissão</span></td></tr>';
   }
 
@@ -336,6 +354,8 @@ function linhaParticipante(p) {
     '<td class="num">' + num(p.nota_inicial) + '</td>' +
     '<td class="num"><b>' + num(p.nota_final) + '</b></td>' +
     '<td class="num"><span class="delta ' + classe + '">' + sinal + num(p.evolucao) + '</span></td>' +
+    '<td class="num">' + (p.nivel_final ? 'N' + p.nivel_final : '—') + '</td>' +
+    '<td class="num">' + (p.palavras_final || '—') + '</td>' +
     '<td><div class="barra"><div class="trilho">' +
       '<div class="faixa-ini" style="width:' + (Math.max(p.nota_inicial, p.nota_final) * 10) + '%"></div>' +
       '<div class="faixa-fim' + (caiu ? ' caiu' : '') + '" style="width:' + (Math.min(p.nota_inicial, p.nota_final) * 10) + '%"></div>' +
@@ -362,6 +382,8 @@ async function abrirDetalhe(id) {
       '<div class="cab"><b>Versão ' + h.versao + '</b>' +
         '<span class="selo ' + (h.resumo.classe === 'excelente' ? 'ok' : (h.resumo.classe === 'baixo' ? 'ruim' : 'meio')) + '">' +
         num(h.nota) + ' · ' + escapar(h.resumo.rotulo) + '</span>' + delta +
+        (h.nivel ? '<span class="selo neutro">N' + h.nivel + ' ' + escapar(h.resumo.nivel?.rotulo || '') + '</span>' : '') +
+        (h.palavras ? '<span class="env">' + h.palavras + ' palavras</span>' : '') +
         '<span class="env" style="margin-left:auto">' + new Date(h.criado_em).toLocaleString('pt-BR') + '</span>' +
       '</div>' +
       '<div class="texto">' + escapar(h.texto) + '</div>' +

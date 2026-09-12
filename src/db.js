@@ -33,11 +33,22 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sub_equipe ON submissoes(equipe_id, versao);
 `);
 
-// Migração idempotente: a tabela já existia em produção sem a coluna de e-mail.
-const colunas = db.prepare('PRAGMA table_info(equipes)').all().map((c) => c.name);
-if (!colunas.includes('email')) {
-  db.exec("ALTER TABLE equipes ADD COLUMN email TEXT NOT NULL DEFAULT ''");
+/**
+ * Migrações idempotentes: as tabelas já existem em produção sem estas colunas,
+ * e o banco vive num volume que não é recriado a cada deploy.
+ */
+function garantirColuna(tabela, coluna, definicao) {
+  const colunas = db.prepare(`PRAGMA table_info(${tabela})`).all().map((c) => c.name);
+  if (!colunas.includes(coluna)) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`);
 }
+
+garantirColuna('equipes', 'email', "email TEXT NOT NULL DEFAULT ''");
+// Nível e palavras ganham coluna própria, e não só um campo dentro de
+// resumo_json, para que o painel possa agregar a turma em SQL. Submissões
+// anteriores à escada de nível ficam com 0 — o painel mostra "—" nesse caso,
+// em vez de fingir que aquela submissão foi medida e ficou no N1.
+garantirColuna('submissoes', 'nivel', 'nivel INTEGER NOT NULL DEFAULT 0');
+garantirColuna('submissoes', 'palavras', 'palavras INTEGER NOT NULL DEFAULT 0');
 
 const agora = () => new Date().toISOString();
 
@@ -65,18 +76,21 @@ export function ultimaSubmissao(equipeId) {
   return row ? hidratar(row) : null;
 }
 
-export function salvarSubmissao({ equipeId, versao, texto, resumo, avaliacoes, diff }) {
+export function salvarSubmissao({ equipeId, versao, texto, resumo, avaliacoes, diff, palavras }) {
   const info = db
     .prepare(
       `INSERT INTO submissoes
-         (equipe_id, versao, texto, nota, bem_delimitado, avaliacao_json, resumo_json, diff_json, criado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (equipe_id, versao, texto, nota, nivel, palavras, bem_delimitado,
+          avaliacao_json, resumo_json, diff_json, criado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       equipeId,
       versao,
       texto,
       resumo.nota,
+      resumo.nivel?.nivel ?? 0,
+      palavras ?? 0,
       resumo.bem_delimitado ? 1 : 0,
       JSON.stringify(avaliacoes),
       JSON.stringify(resumo),
@@ -133,6 +147,9 @@ export function participantes() {
               MAX(s.criado_em)    AS ultima_em,
               (SELECT nota FROM submissoes WHERE equipe_id = e.id ORDER BY versao ASC  LIMIT 1) AS nota_inicial,
               (SELECT nota FROM submissoes WHERE equipe_id = e.id ORDER BY versao DESC LIMIT 1) AS nota_final,
+              (SELECT nivel FROM submissoes WHERE equipe_id = e.id ORDER BY versao DESC LIMIT 1) AS nivel_final,
+              (SELECT palavras FROM submissoes WHERE equipe_id = e.id ORDER BY versao DESC LIMIT 1) AS palavras_final,
+              (SELECT palavras FROM submissoes WHERE equipe_id = e.id ORDER BY versao ASC  LIMIT 1) AS palavras_inicial,
               (SELECT bem_delimitado FROM submissoes WHERE equipe_id = e.id ORDER BY versao DESC LIMIT 1) AS bem_delimitado
          FROM equipes e
          LEFT JOIN submissoes s ON s.equipe_id = e.id
@@ -160,6 +177,12 @@ export function estatisticas() {
   const totalEquipes = db.prepare('SELECT COUNT(*) AS n FROM equipes').get().n;
   const totalSubmissoes = db.prepare('SELECT COUNT(*) AS n FROM submissoes').get().n;
 
+  // Só quem foi avaliado pela escada entra na distribuição de níveis: turmas
+  // anteriores gravaram nivel = 0 e contá-las como N1 inventaria um dado.
+  const medidos = lista.filter((p) => p.nivel_final > 0);
+  const distribuicao = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  for (const p of medidos) distribuicao[p.nivel_final] += 1;
+
   return {
     total_participantes: totalEquipes,
     participantes_ativos: lista.length,
@@ -172,6 +195,13 @@ export function estatisticas() {
     bem_delimitados: lista.filter((p) => p.bem_delimitado).length,
     melhoraram: lista.filter((p) => p.evolucao > 0).length,
     pioraram: lista.filter((p) => p.evolucao < 0).length,
+    // Extensão da turma: é o número que revela o enunciado crescendo rodada
+    // após rodada, o sintoma que motivou a escada de nível.
+    media_palavras_inicial: media(medidos.map((p) => p.palavras_inicial).filter((n) => n > 0)),
+    media_palavras_final: media(medidos.map((p) => p.palavras_final).filter((n) => n > 0)),
+    distribuicao_niveis: distribuicao,
+    medidos: medidos.length,
+    no_nivel_4: distribuicao[4],
   };
 }
 
@@ -189,6 +219,8 @@ function hidratar(row) {
     versao: row.versao,
     texto: row.texto,
     nota: row.nota,
+    nivel: row.nivel ?? 0,
+    palavras: row.palavras ?? 0,
     bem_delimitado: !!row.bem_delimitado,
     avaliacoes: JSON.parse(row.avaliacao_json),
     resumo: JSON.parse(row.resumo_json),

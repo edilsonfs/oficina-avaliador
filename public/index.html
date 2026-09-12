@@ -121,6 +121,42 @@
   .alerta-novo h3 { margin: 0 0 .4rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
   .alerta-novo ul { margin: 0; padding-left: 1.1rem; }
 
+  /* Escada de nível: os quatro degraus entre "tenho um assunto" e "tenho um problema". */
+  .escada { list-style: none; margin: 0; padding: 0; }
+  .degrau { display: grid; grid-template-columns: 22px 1fr; gap: .75rem; padding-bottom: .9rem; position: relative; }
+  .degrau:last-child { padding-bottom: 0; }
+  /* o fio liga um marcador ao seguinte; o último degrau não tem para onde seguir */
+  .degrau:not(:last-child)::before {
+    content: ''; position: absolute; left: 10px; top: 21px; bottom: 0; width: 2px; background: var(--linha);
+  }
+  .degrau .marcador {
+    width: 21px; height: 21px; border-radius: 50%; border: 2px solid var(--linha); background: #fff;
+    display: grid; place-content: center; font-size: .65rem; font-weight: 700; color: var(--tinta-suave);
+    position: relative; z-index: 1;
+  }
+  .degrau.vencido .marcador { border-color: var(--verde); background: var(--verde-fundo); color: var(--verde); }
+  .degrau.atual .marcador { border-color: var(--marca); background: var(--marca); color: #fff; }
+  .degrau .corpo strong { font-size: .93rem; }
+  .degrau .corpo p { margin: .15rem 0 0; font-size: .85rem; color: var(--tinta-suave); }
+  .degrau.atual .corpo strong { color: var(--marca); }
+  .degrau.atual .corpo p { color: var(--tinta); }
+  .degrau.futuro .corpo strong { color: var(--tinta-suave); }
+  .aqui { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--marca); background: var(--marca-clara); border-radius: 4px; padding: .1rem .4rem;
+    margin-left: .45rem; white-space: nowrap; }
+  .trava { margin-top: 1rem; background: var(--ambar-fundo); border: 1px solid #f0dcbc; border-radius: 8px;
+    padding: .8rem 1rem; font-size: .87rem; color: var(--ambar); }
+  .trava h3 { margin: 0 0 .4rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+  .trava ul { margin: 0; padding-left: 1.1rem; }
+  .trava li { margin-bottom: .2rem; }
+  .chegou { margin-top: 1rem; background: var(--verde-fundo); border: 1px solid #bfe3d0; border-radius: 8px;
+    padding: .8rem 1rem; font-size: .88rem; color: var(--verde); font-weight: 600; }
+
+  .contador.acima { color: var(--ambar); font-weight: 600; }
+  .contador.estourou { color: var(--vermelho); font-weight: 600; }
+  .criterio .medido { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em;
+    background: #eef1f5; color: var(--tinta-suave); border-radius: 4px; padding: .12rem .4rem; }
+
   .tempo { display: flex; gap: .5rem; flex-wrap: wrap; }
   .tempo .v { background: #fff; border: 1px solid var(--linha); border-radius: 8px; padding: .5rem .8rem; font-size: .82rem; text-align: center; min-width: 74px; }
   .tempo .v b { display: block; font-size: 1.15rem; }
@@ -202,14 +238,15 @@
     <div class="cartao">
       <h2>Seu problema de pesquisa <span id="rotuloEquipe" class="peso"></span></h2>
       <p class="sub">
-        Escreva o enunciado completo — a pergunta de pesquisa e, se quiser, uma ou duas frases de delimitação.
-        Você receberá um diagnóstico critério a critério e poderá reenviar quantas vezes precisar.
+        Escreva a <b>pergunta de pesquisa numa frase curta</b> e, depois dela, uma ou duas frases separadas
+        com o recorte e os conceitos. Problema de pesquisa aprovado em mestrado tem uma pergunta só, enxuta —
+        quando tudo vira uma frase comprida, o que falta é recorte, não texto.
       </p>
-      <textarea id="texto" placeholder="Ex.: Como se dá a aplicação da ratio decidendi de precedentes qualificados pelas câmaras cíveis do TJPE, entre 2020 e 2025, nas decisões que invocam o CPC/2015?"></textarea>
+      <textarea id="texto" placeholder="Ex.: Como se dá a aplicação da ratio decidendi de precedentes qualificados nas decisões das câmaras cíveis do TJPE? A observação recai sobre os acórdãos que invocam o CPC/2015 entre 2020 e 2025, tomando como aplicação a transcrição do fundamento determinante do precedente."></textarea>
       <div class="linha-acoes">
         <button class="btn" id="btnAvaliar">Avaliar</button>
         <button class="btn secundario oculto" id="btnNovaVersao">Escrever nova versão</button>
-        <span class="contador"><span id="contaChars">0</span> caracteres</span>
+        <span class="contador" id="contador">0 palavras</span>
       </div>
       <div id="statusEnvio" class="oculto" style="margin-top:.9rem"></div>
     </div>
@@ -244,6 +281,20 @@
         </div>
       </div>
 
+      <div class="cartao" id="cartaoNivel">
+        <h2>Nível de análise do seu enunciado</h2>
+        <p class="sub">
+          Onde você está entre um assunto de interesse e um problema de pesquisa. O nível não é opinião do
+          avaliador: ele é derivado dos vereditos da rubrica, sempre pelos mesmos portões.
+        </p>
+        <ul class="escada" id="escada"></ul>
+        <div id="travaNivel" class="trava oculto">
+          <h3>Para subir de degrau, falta</h3>
+          <ul id="listaTrava"></ul>
+        </div>
+        <div id="chegouNivel" class="chegou oculto"></div>
+      </div>
+
       <div id="cartaoErrosNovos" class="cartao oculto">
         <div class="alerta-novo">
           <h3>Atenção — problemas introduzidos nesta reescrita</h3>
@@ -259,7 +310,7 @@
 
       <div class="cartao">
         <h2>Diagnóstico por critério</h2>
-        <p class="sub">Dez critérios, com pesos que somam 100 pontos.</p>
+        <p class="sub">Onze critérios, com pesos que somam 100 pontos. O de concisão é contado em código, não julgado pelo avaliador.</p>
         <div id="listaCriterios"></div>
       </div>
 
@@ -295,6 +346,39 @@ const $ = (id) => document.getElementById(id);
 const CIRC = 2 * Math.PI * 58;
 const ROTULO_STATUS = { atendido: 'atendido', parcial: 'parcial', nao_atendido: 'não atendido' };
 const RUBRICA = new Map();
+// Escada e faixa-alvo vêm do servidor (/api/rubrica). Nenhum número de
+// calibragem é escrito aqui: se a rubrica mudar, esta tela muda junto.
+let NIVEIS = [];
+let MEDIDAS = null;
+
+/**
+ * Contagem ao vivo, para o participante ver a frase crescendo antes de enviar.
+ * O veredito oficial de concisão é do servidor; aqui é só o aviso antecipado,
+ * usando a mesma noção de palavra (sequência sem espaços) e a mesma ideia de
+ * pergunta central (a frase interrogativa mais longa).
+ */
+function atualizarContador() {
+  const el = $('contador');
+  const t = $('texto').value.trim();
+  const palavras = (t.match(/\S+/g) || []).length;
+
+  if (!MEDIDAS) { el.className = 'contador'; el.textContent = palavras + ' palavras'; return; }
+
+  const frases = t.split(/(?<=[.!?])\s+/).map((f) => f.trim()).filter(Boolean);
+  const interrogativas = frases.filter((f) => f.includes('?'));
+  const central = interrogativas.length
+    ? interrogativas.reduce((a, b) => ((b.match(/\S+/g) || []).length > (a.match(/\S+/g) || []).length ? b : a))
+    : t;
+  const naPergunta = (central.match(/\S+/g) || []).length;
+
+  const estourou = naPergunta > MEDIDAS.pergunta_limite || palavras > MEDIDAS.enunciado_limite;
+  const acima = naPergunta > MEDIDAS.pergunta_alvo || palavras > MEDIDAS.enunciado_alvo;
+  el.className = 'contador' + (estourou ? ' estourou' : acima ? ' acima' : '');
+  el.textContent = palavras
+    ? naPergunta + '/' + MEDIDAS.pergunta_alvo + ' palavras na pergunta · ' +
+      palavras + '/' + MEDIDAS.enunciado_alvo + ' no enunciado'
+    : 'alvo: pergunta com até ' + MEDIDAS.pergunta_alvo + ' palavras';
+}
 
 (async function iniciar() {
   // A rubrica precisa estar carregada ANTES de restaurar o histórico: é dela que
@@ -359,8 +443,8 @@ function abrirOficina() {
   const rascunho = localStorage.getItem(RASCUNHO);
   if (rascunho && !$('texto').value) {
     $('texto').value = rascunho;
-    $('contaChars').textContent = rascunho.trim().length;
   }
+  atualizarContador();
   carregarHistorico();
 }
 
@@ -386,7 +470,7 @@ function encerrarSessao(msg) {
 
 $('btnSair').onclick = () => encerrarSessao('');
 
-$('texto').addEventListener('input', (e) => { $('contaChars').textContent = e.target.value.trim().length; });
+$('texto').addEventListener('input', atualizarContador);
 
 $('btnNovaVersao').onclick = () => {
   $('texto').focus();
@@ -401,7 +485,7 @@ $('btnAvaliar').onclick = async () => {
   }
 
   $('btnAvaliar').disabled = true;
-  mostrarStatus('<span class="carregando"><span class="girando"></span> Avaliando pelos 10 critérios da rubrica…</span>', 'carregando');
+  mostrarStatus('<span class="carregando"><span class="girando"></span> Avaliando pela rubrica e situando o nível de análise…</span>', 'carregando');
 
   try {
     const r = await fetch('/api/equipes/' + equipe.id + '/submissoes', {
@@ -473,8 +557,51 @@ function renderizar(d) {
     cEN.classList.remove('oculto');
   } else { cEN.classList.add('oculto'); }
 
+  renderizarNivel(d.resumo.nivel);
   renderizarDiff(d.diff);
   renderizarCriterios(d.avaliacoes);
+}
+
+/**
+ * Desenha a escada e diz exatamente o que trava a subida ao degrau seguinte.
+ * Submissões de turmas anteriores à escada não têm nível gravado — nesse caso o
+ * cartão fica oculto, em vez de exibir um N1 que nunca foi medido.
+ */
+function renderizarNivel(nivel) {
+  const cartao = $('cartaoNivel');
+  if (!nivel || !NIVEIS.length) { cartao.classList.add('oculto'); return; }
+  cartao.classList.remove('oculto');
+
+  $('escada').innerHTML = NIVEIS.map((n) => {
+    const classe = n.nivel < nivel.nivel ? 'vencido' : (n.nivel === nivel.nivel ? 'atual' : 'futuro');
+    return '<li class="degrau ' + classe + '">' +
+      '<span class="marcador">' + (n.nivel < nivel.nivel ? '✓' : 'N' + n.nivel) + '</span>' +
+      '<div class="corpo">' +
+        '<strong>' + escapar(n.rotulo) + '</strong>' +
+        (n.nivel === nivel.nivel ? '<span class="aqui">você está aqui</span>' : '') +
+        '<p>' + escapar(n.descricao) + '</p>' +
+      '</div></li>';
+  }).join('');
+
+  const trava = $('travaNivel');
+  const chegou = $('chegouNivel');
+
+  if (nivel.proximo && nivel.faltando.length) {
+    trava.querySelector('h3').textContent =
+      'Para chegar ao N' + nivel.proximo.nivel + ' · ' + nivel.proximo.rotulo + ', falta';
+    $('listaTrava').innerHTML = nivel.faltando.map((f) =>
+      '<li><b>' + escapar(f.titulo) + '</b> — está ' + ROTULO_STATUS[f.status] + ', precisa ficar ' +
+      (f.minimo === 'atendido' ? 'atendido' : 'ao menos parcial') + '</li>').join('');
+    trava.classList.remove('oculto');
+    chegou.classList.add('oculto');
+  } else if (!nivel.proximo) {
+    chegou.textContent = '✓ Último degrau alcançado. ' + nivel.descricao;
+    chegou.classList.remove('oculto');
+    trava.classList.add('oculto');
+  } else {
+    trava.classList.add('oculto');
+    chegou.classList.add('oculto');
+  }
 }
 
 function renderizarDiff(diff) {
@@ -507,6 +634,7 @@ function renderizarCriterios(avaliacoes) {
         '<strong>' + escapar(meta.titulo || a.criterio) + '</strong>' +
         '<span class="marca-status ' + a.status + '">' + ROTULO_STATUS[a.status] + '</span>' +
         '<span class="peso">peso ' + (meta.peso !== undefined ? meta.peso : '—') + '</span>' +
+        (meta.medido ? '<span class="medido" title="Contado em código, não julgado pelo avaliador">medido</span>' : '') +
       '</div>' +
       (a.diagnostico ? '<p>' + escapar(a.diagnostico) + '</p>' : '') +
       (a.evidencia ? '<p class="evidencia">“' + escapar(a.evidencia) + '”</p>' : '') +
@@ -536,7 +664,7 @@ async function carregarHistorico() {
     const ult = hist[hist.length - 1];
     ultimaVersao = ult.versao;
     $('texto').value = ult.texto;
-    $('contaChars').textContent = ult.texto.trim().length;
+    atualizarContador();
     renderizar({
       versao: ult.versao, resumo: ult.resumo, avaliacoes: ult.avaliacoes, diff: ult.diff,
       delta_nota: null, erros_novos: [], comentario_geral: '',
@@ -559,8 +687,14 @@ async function carregarRubrica() {
     return; // falha aqui não pode impedir o login
   }
   dados.criterios.forEach((c) => RUBRICA.set(c.id, c));
+  NIVEIS = dados.niveis || [];
+  MEDIDAS = dados.medidas || null;
+  atualizarContador();
+
   document.querySelector('#tabelaRubrica tbody').innerHTML = dados.criterios.map((c) =>
-    '<tr><td><b>' + escapar(c.titulo) + '</b></td><td>' + c.peso + '</td><td>' + escapar(c.pergunta) + '</td></tr>'
+    '<tr><td><b>' + escapar(c.titulo) + '</b>' +
+      (c.medido ? ' <span class="medido">medido</span>' : '') +
+    '</td><td>' + c.peso + '</td><td>' + escapar(c.pergunta) + '</td></tr>'
   ).join('');
 }
 

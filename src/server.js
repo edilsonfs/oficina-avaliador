@@ -3,7 +3,15 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 
-import { CRITERIOS, PESO_TOTAL, calcularNota, compararVersoes } from './rubrica.js';
+import {
+  TODOS_CRITERIOS,
+  PESO_TOTAL,
+  MEDIDAS,
+  NIVEIS,
+  medirTexto,
+  calcularNota,
+  compararVersoes,
+} from './rubrica.js';
 import { avaliar } from './avaliador.js';
 import {
   criarEquipe,
@@ -75,20 +83,30 @@ app.get('/health', (_req, res) => {
     servico: 'oficina-avaliador',
     modelo: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
     chave_configurada: Boolean(process.env.DEEPSEEK_API_KEY),
-    criterios: CRITERIOS.length,
+    criterios: TODOS_CRITERIOS.length,
     peso_total: PESO_TOTAL,
+    niveis: NIVEIS.length,
   });
 });
 
+/*
+ * A rubrica inteira é servida ao front-end — critérios, faixa-alvo de extensão
+ * e escada de nível. Nenhum desses números é repetido no HTML: se a calibragem
+ * mudar em rubrica.js, a tela muda junto, sem risco de a interface prometer um
+ * alvo diferente do que o servidor cobra.
+ */
 app.get('/api/rubrica', (_req, res) => {
   res.json({
     peso_total: PESO_TOTAL,
-    criterios: CRITERIOS.map(({ id, titulo, peso, pergunta, ancoras }) => ({
+    medidas: MEDIDAS,
+    niveis: NIVEIS.map(({ nivel, rotulo, descricao }) => ({ nivel, rotulo, descricao })),
+    criterios: TODOS_CRITERIOS.map(({ id, titulo, peso, pergunta, ancoras, medido }) => ({
       id,
       titulo,
       peso,
       pergunta,
       ancoras,
+      medido: Boolean(medido),
     })),
   });
 });
@@ -153,6 +171,8 @@ app.post('/api/equipes/:id/submissoes', async (req, res) => {
     const diff = compararVersoes(anterior?.avaliacoes ?? null, resultado.avaliacoes);
     const delta = anterior ? Math.round((resumo.nota - anterior.nota) * 10) / 10 : null;
 
+    const medida = resultado.medida ?? medirTexto(texto);
+
     salvarSubmissao({
       equipeId: equipe.id,
       versao,
@@ -160,12 +180,14 @@ app.post('/api/equipes/:id/submissoes', async (req, res) => {
       resumo,
       avaliacoes: resultado.avaliacoes,
       diff,
+      palavras: medida.palavras,
     });
 
     res.json({
       versao,
       texto,
       resumo,
+      medida,
       delta_nota: delta,
       nota_anterior: anterior?.nota ?? null,
       avaliacoes: resultado.avaliacoes,
