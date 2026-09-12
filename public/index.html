@@ -86,6 +86,10 @@
 
   .selo-ok { margin-top: .8rem; background: var(--verde-fundo); border: 1px solid #bfe3d0; color: var(--verde);
     padding: .8rem 1rem; border-radius: 8px; font-size: .9rem; font-weight: 600; }
+  .selo-pendente { margin-top: .8rem; background: var(--ambar-fundo); border: 1px solid #f0dcbc; color: var(--ambar);
+    padding: .8rem 1rem; border-radius: 8px; font-size: .9rem; font-weight: 600; }
+  .criterio .critico { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em;
+    background: var(--vermelho-fundo); color: var(--vermelho); border-radius: 4px; padding: .12rem .4rem; }
 
   .resumo-contagem { display: flex; gap: 1.25rem; margin-top: .7rem; font-size: .85rem; color: var(--tinta-suave); flex-wrap: wrap; }
   .resumo-contagem b { color: var(--tinta); }
@@ -310,7 +314,7 @@
 
       <div class="cartao">
         <h2>Diagnóstico por critério</h2>
-        <p class="sub">Onze critérios, com pesos que somam 100 pontos. O de concisão é contado em código, não julgado pelo avaliador.</p>
+        <p class="sub" id="subCriterios">Onze critérios, com pesos que somam 100 pontos. O de concisão é contado em código, não julgado pelo avaliador.</p>
         <div id="listaCriterios"></div>
       </div>
 
@@ -546,8 +550,19 @@ function renderizar(d) {
   $('comentarioGeral').textContent = d.comentario_geral || '';
 
   const selo = $('seloOk');
+  const pendentes = d.resumo.criticos_pendentes || [];
+  const limiar = (d.resumo.limiar_selo || 8.5).toFixed(1).replace('.', ',');
   if (d.resumo.bem_delimitado) {
-    selo.textContent = '✓ Seu problema de pesquisa está bem delimitado. Ele atende aos critérios da rubrica e está pronto para ser levado ao orientador.';
+    selo.className = 'selo-ok';
+    selo.textContent = '✓ Seu problema de pesquisa está bem delimitado. Passou de ' + limiar +
+      ' sem nenhum ponto crítico zerado — está pronto para ser levado ao orientador.';
+    selo.classList.remove('oculto');
+  } else if (pendentes.length) {
+    // Nota alta com ponto crítico zerado é o caso que mais confunde: sem dizer
+    // qual, o participante fica reescrevendo o que já estava bom.
+    selo.className = 'selo-pendente';
+    selo.textContent = 'Para o selo de bem delimitado faltam os pontos críticos: ' +
+      pendentes.map((p) => p.titulo).join(', ') + '. Nota mínima: ' + limiar + '.';
     selo.classList.remove('oculto');
   } else { selo.classList.add('oculto'); }
 
@@ -635,6 +650,7 @@ function renderizarCriterios(avaliacoes) {
         '<span class="marca-status ' + a.status + '">' + ROTULO_STATUS[a.status] + '</span>' +
         '<span class="peso">peso ' + (meta.peso !== undefined ? meta.peso : '—') + '</span>' +
         (meta.medido ? '<span class="medido" title="Contado em código, não julgado pelo avaliador">medido</span>' : '') +
+        (meta.critico && a.status === 'nao_atendido' ? '<span class="critico" title="Ponto crítico: zerado, impede o selo de bem delimitado">ponto crítico</span>' : '') +
       '</div>' +
       (a.diagnostico ? '<p>' + escapar(a.diagnostico) + '</p>' : '') +
       (a.evidencia ? '<p class="evidencia">“' + escapar(a.evidencia) + '”</p>' : '') +
@@ -691,9 +707,17 @@ async function carregarRubrica() {
   MEDIDAS = dados.medidas || null;
   atualizarContador();
 
+  const limiar = (dados.limiar_selo || 8.5).toFixed(1).replace('.', ',');
+  const criticos = dados.criterios.filter((c) => c.critico).length;
+  $('subCriterios').textContent =
+    dados.criterios.length + ' critérios, com pesos que somam ' + dados.peso_total + ' pontos. ' +
+    'O selo de bem delimitado exige nota ' + limiar + ' e nenhum dos ' + criticos +
+    ' pontos críticos zerado — não exige perfeição.';
+
   document.querySelector('#tabelaRubrica tbody').innerHTML = dados.criterios.map((c) =>
     '<tr><td><b>' + escapar(c.titulo) + '</b>' +
       (c.medido ? ' <span class="medido">medido</span>' : '') +
+      (c.critico ? ' <span class="medido" title="Zerar este critério impede o selo">crítico</span>' : '') +
     '</td><td>' + c.peso + '</td><td>' + escapar(c.pergunta) + '</td></tr>'
   ).join('');
 }

@@ -5,6 +5,8 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 
 import {
   TODOS_CRITERIOS,
+  CRITERIOS_CRITICOS,
+  LIMIAR_BEM_DELIMITADO,
   PESO_TOTAL,
   MEDIDAS,
   NIVEIS,
@@ -99,6 +101,7 @@ app.get('/api/rubrica', (_req, res) => {
   res.json({
     peso_total: PESO_TOTAL,
     medidas: MEDIDAS,
+    limiar_selo: LIMIAR_BEM_DELIMITADO,
     niveis: NIVEIS.map(({ nivel, rotulo, descricao }) => ({ nivel, rotulo, descricao })),
     criterios: TODOS_CRITERIOS.map(({ id, titulo, peso, pergunta, ancoras, medido }) => ({
       id,
@@ -107,6 +110,7 @@ app.get('/api/rubrica', (_req, res) => {
       pergunta,
       ancoras,
       medido: Boolean(medido),
+      critico: CRITERIOS_CRITICOS.has(id),
     })),
   });
 });

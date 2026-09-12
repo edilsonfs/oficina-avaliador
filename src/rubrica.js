@@ -205,6 +205,36 @@ export const TODOS_CRITERIOS = [...CRITERIOS, CRITERIO_CONCISAO];
 
 export const PESO_TOTAL = TODOS_CRITERIOS.reduce((s, c) => s + c.peso, 0); // 100
 
+/**
+ * Pontos críticos: sem eles não há problema de pesquisa, e por isso nenhum
+ * pode estar zerado no enunciado que recebe o selo. São exatamente os mesmos
+ * critérios que abrem os portões da escada de nível — a coerência é proposital.
+ *
+ * Ficam de fora viabilidade, relevância e lacuna. Não por serem menores, mas
+ * porque pertencem a outras partes do projeto: a justificativa declara por que
+ * o tema importa, a revisão de literatura demarca o que já se sabe. Exigi-los
+ * dentro do enunciado era pedir que o participante engordasse a pergunta — e
+ * aí ele perdia a concisão. Os dois critérios se anulavam, e o selo ficava
+ * inalcançável: nenhum dos 100 enunciados de teste conseguia tomá-lo.
+ */
+export const CRITERIOS_CRITICOS = new Set([
+  'empiricidade',
+  'unicidade',
+  'forma_interrogativa',
+  'delimitacao_objeto',
+  'recorte_espaco_tempo',
+  'operacionalizacao',
+  'adequacao_metodo',
+  'concisao',
+]);
+
+/**
+ * Nota mínima para o selo: 85% da rubrica. Perfeição não é o alvo — um
+ * enunciado pode deixar pontos na mesa em critérios contextuais e ainda ser um
+ * problema de pesquisa bem delimitado.
+ */
+export const LIMIAR_BEM_DELIMITADO = 8.5;
+
 const contarPalavras = (s) => (String(s).match(/\S+/g) ?? []).length;
 
 /**
@@ -428,10 +458,14 @@ export function calcularNota(avaliacoes) {
   const parciais = avaliacoes.filter((a) => a.status === 'parcial').length;
   const nivel = calcularNivel(avaliacoes);
 
-  // "Bem delimitado" exige mais do que a nota: nenhum critério zerado e o
-  // último degrau da escada alcançado. Um enunciado de nota alta que ainda não
-  // chegou ao nível 4 não está pronto para ir ao orientador.
-  const bemDelimitado = nota >= 9.0 && naoAtendidos === 0 && parciais <= 1 && nivel.nivel === 4;
+  // "Bem delimitado" não é perfeição: são 85% da rubrica sem nenhum ponto
+  // crítico zerado. Deixar pontos em relevância ou lacuna não desqualifica um
+  // enunciado — zerar a delimitação do objeto, sim.
+  const criticosPendentes = avaliacoes
+    .filter((a) => CRITERIOS_CRITICOS.has(a.criterio) && a.status === 'nao_atendido')
+    .map((a) => ({ criterio: a.criterio, titulo: TITULOS.get(a.criterio) ?? a.criterio }));
+
+  const bemDelimitado = nota >= LIMIAR_BEM_DELIMITADO && criticosPendentes.length === 0;
 
   return {
     nota,
@@ -440,6 +474,8 @@ export function calcularNota(avaliacoes) {
     classe: faixa.classe,
     nivel,
     bem_delimitado: bemDelimitado,
+    limiar_selo: LIMIAR_BEM_DELIMITADO,
+    criticos_pendentes: criticosPendentes,
     total_atendidos: avaliacoes.filter((a) => a.status === 'atendido').length,
     total_parciais: parciais,
     total_nao_atendidos: naoAtendidos,
