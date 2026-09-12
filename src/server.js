@@ -7,6 +7,7 @@ import {
   TODOS_CRITERIOS,
   CRITERIOS_CRITICOS,
   LIMIAR_BEM_DELIMITADO,
+  NIVEL_MINIMO_SELO,
   PESO_TOTAL,
   MEDIDAS,
   NIVEIS,
@@ -102,6 +103,7 @@ app.get('/api/rubrica', (_req, res) => {
     peso_total: PESO_TOTAL,
     medidas: MEDIDAS,
     limiar_selo: LIMIAR_BEM_DELIMITADO,
+    nivel_minimo_selo: NIVEL_MINIMO_SELO,
     niveis: NIVEIS.map(({ nivel, rotulo, descricao }) => ({ nivel, rotulo, descricao })),
     criterios: TODOS_CRITERIOS.map(({ id, titulo, peso, pergunta, ancoras, medido }) => ({
       id,

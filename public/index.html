@@ -552,17 +552,29 @@ function renderizar(d) {
   const selo = $('seloOk');
   const pendentes = d.resumo.criticos_pendentes || [];
   const limiar = (d.resumo.limiar_selo || 8.5).toFixed(1).replace('.', ',');
+  const nivelMin = d.resumo.nivel_minimo_selo || 3;
+  const bloqueio = d.resumo.selo_bloqueado_por;
+
   if (d.resumo.bem_delimitado) {
     selo.className = 'selo-ok';
     selo.textContent = '✓ Seu problema de pesquisa está bem delimitado. Passou de ' + limiar +
       ' sem nenhum ponto crítico zerado — está pronto para ser levado ao orientador.';
     selo.classList.remove('oculto');
-  } else if (pendentes.length) {
+  } else if (bloqueio === 'criticos') {
     // Nota alta com ponto crítico zerado é o caso que mais confunde: sem dizer
     // qual, o participante fica reescrevendo o que já estava bom.
     selo.className = 'selo-pendente';
     selo.textContent = 'Para o selo de bem delimitado faltam os pontos críticos: ' +
       pendentes.map((p) => p.titulo).join(', ') + '. Nota mínima: ' + limiar + '.';
+    selo.classList.remove('oculto');
+  } else if (bloqueio === 'nivel') {
+    // A nota já bastaria. O que falta é o degrau do recorte — e é ele que dá
+    // sentido ao nome do selo.
+    const trava = (d.resumo.nivel.faltando || []).map((f) => f.titulo).join(', ');
+    selo.className = 'selo-pendente';
+    selo.textContent = 'Sua nota já bastaria para o selo, mas ele exige o nível ' + nivelMin +
+      ' — o do recorte — e você está no nível ' + d.resumo.nivel.nivel +
+      (trava ? '. Falta: ' + trava + '.' : '.');
     selo.classList.remove('oculto');
   } else { selo.classList.add('oculto'); }
 
@@ -711,8 +723,9 @@ async function carregarRubrica() {
   const criticos = dados.criterios.filter((c) => c.critico).length;
   $('subCriterios').textContent =
     dados.criterios.length + ' critérios, com pesos que somam ' + dados.peso_total + ' pontos. ' +
-    'O selo de bem delimitado exige nota ' + limiar + ' e nenhum dos ' + criticos +
-    ' pontos críticos zerado — não exige perfeição.';
+    'O selo de bem delimitado exige nota ' + limiar + ', nenhum dos ' + criticos +
+    ' pontos críticos zerado e o nível ' + (dados.nivel_minimo_selo || 3) +
+    ' da escada — não exige perfeição.';
 
   document.querySelector('#tabelaRubrica tbody').innerHTML = dados.criterios.map((c) =>
     '<tr><td><b>' + escapar(c.titulo) + '</b>' +

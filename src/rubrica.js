@@ -235,6 +235,18 @@ export const CRITERIOS_CRITICOS = new Set([
  */
 export const LIMIAR_BEM_DELIMITADO = 8.5;
 
+/**
+ * Piso da escada para o selo: N3, o degrau do Recorte.
+ *
+ * Existe por coerência com o nome do selo, não por rigor. Um enunciado pode
+ * chegar aos 85% com o recorte apenas parcial — foi o que aconteceu num dos
+ * 100 enunciados de teste, que levou o selo estando no N2. A tela então dizia
+ * "bem delimitado" logo acima de "N2 — Tema com foco", e o participante lia
+ * duas coisas contrárias sobre o mesmo texto. Quem está no N2 é, por definição
+ * da própria escada, quem ainda não delimitou onde e quando vai observar.
+ */
+export const NIVEL_MINIMO_SELO = 3;
+
 const contarPalavras = (s) => (String(s).match(/\S+/g) ?? []).length;
 
 /**
@@ -459,13 +471,28 @@ export function calcularNota(avaliacoes) {
   const nivel = calcularNivel(avaliacoes);
 
   // "Bem delimitado" não é perfeição: são 85% da rubrica sem nenhum ponto
-  // crítico zerado. Deixar pontos em relevância ou lacuna não desqualifica um
-  // enunciado — zerar a delimitação do objeto, sim.
+  // crítico zerado, do degrau do Recorte para cima. Deixar pontos em relevância
+  // ou lacuna não desqualifica um enunciado — zerar a delimitação do objeto, sim.
   const criticosPendentes = avaliacoes
     .filter((a) => CRITERIOS_CRITICOS.has(a.criterio) && a.status === 'nao_atendido')
     .map((a) => ({ criterio: a.criterio, titulo: TITULOS.get(a.criterio) ?? a.criterio }));
 
-  const bemDelimitado = nota >= LIMIAR_BEM_DELIMITADO && criticosPendentes.length === 0;
+  const bemDelimitado =
+    nota >= LIMIAR_BEM_DELIMITADO &&
+    criticosPendentes.length === 0 &&
+    nivel.nivel >= NIVEL_MINIMO_SELO;
+
+  // Qual das três condições barrou o selo. A ordem importa: "nivel" só pode
+  // sair depois de "nota", porque a tela usa esse caso para dizer que a nota
+  // já bastaria — e ela não bastaria se o enunciado ainda estivesse abaixo do
+  // limiar.
+  const bloqueio = bemDelimitado
+    ? null
+    : criticosPendentes.length
+      ? 'criticos'
+      : nota < LIMIAR_BEM_DELIMITADO
+        ? 'nota'
+        : 'nivel';
 
   return {
     nota,
@@ -475,6 +502,8 @@ export function calcularNota(avaliacoes) {
     nivel,
     bem_delimitado: bemDelimitado,
     limiar_selo: LIMIAR_BEM_DELIMITADO,
+    nivel_minimo_selo: NIVEL_MINIMO_SELO,
+    selo_bloqueado_por: bloqueio,
     criticos_pendentes: criticosPendentes,
     total_atendidos: avaliacoes.filter((a) => a.status === 'atendido').length,
     total_parciais: parciais,
